@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# caches
+.cache/
+.local/share/Trash/
+
+# secrets
+*.key
+*.pem
+*.env
+
+# ssh keys
+.ssh/
+
+# git credentials
+.git-credentials
+
+# neovim swap files
+*.swp
