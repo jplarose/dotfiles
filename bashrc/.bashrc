@@ -51,9 +51,9 @@ export PATH="$HOME/.local/bin:$PATH"
  cd ()
  {
  	if [ -n "$1" ]; then
- 		builtin cd "$@" && ls
+ 		builtin cd "$@" && \ls --color=always
  	else
- 		builtin cd ~ && ls
+ 		builtin cd ~ && \ls --color=always
  	fi
  }
 

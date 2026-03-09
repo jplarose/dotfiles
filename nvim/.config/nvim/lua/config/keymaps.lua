@@ -14,6 +14,7 @@ local global_mappings = {
   { 'n', 'nzzzv', desc = 'Next result and center' },
   { 'N', 'Nzzzv', desc = 'Previous result and center' },
   { '<leader>e', '<cmd>Ex<CR>', desc = 'Go back to file tree' },
+  { 'j', 'jzz', desc = 'Jump to line and center' },
 }
 
 wk.add(global_mappings)
