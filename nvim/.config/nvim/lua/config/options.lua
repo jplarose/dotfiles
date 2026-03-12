@@ -52,3 +52,7 @@ o.scrolloff = 10
 
 -- Confirm before quitting unsaved buffers
 o.confirm = true
+
+-- Folding Options
+o.foldmethod = 'expr'
+o.foldexpr = 'nvim_treesitter#foldexpr()'
