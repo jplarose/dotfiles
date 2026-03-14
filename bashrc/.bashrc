@@ -12,6 +12,7 @@
 # Common Aliases
 alias ls='ls -la --color=auto'
 alias grep='grep --color=auto'
+alias rg='rg -. --no-message --color=auto'
 
 # Custom Aliases
 alias dev='cd /home/jlarose/Dev'
