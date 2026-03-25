@@ -31,6 +31,14 @@ local lsp_mappings = {
 
 wk.add(lsp_mappings)
 
+local livePreview_mappings = {
+  { '<leader>lp', '<cmd>LivePreview start<CR>', desc = 'Start LivePreview on the current markdown document' },
+  { '<leader>lpp', '<cmd>LivePreview pick<CR>', desc = 'Choose from the current file tree for a markdown file to preview' },
+  { '<leader>lpl', '<cmd>LivePreview close<CR>', desc = 'Close the current LivePreview instance' },
+}
+
+wk.add(livePreview_mappings)
+
 wk.add({
   { 'J', ":m '>+1<CR>gv=gv", desc = 'Move selection down' },
   { 'K', ":m '<-2<CR>gv=gv", desc = 'Move selection up' },
