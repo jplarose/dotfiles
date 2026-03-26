@@ -12,7 +12,7 @@
 # Common Aliases
 alias ls='ls -la --color=auto'
 alias grep='grep --color=auto'
-alias rg='rg -. --no-messages --color=auto'
+alias rg='rg -. -M 100 -i --no-messages --color=auto'
 
 # Custom Aliases
 alias dev='cd /home/jlarose/Dev'
@@ -129,8 +129,8 @@ function __setprompt
 	fi
 
 	# Date
-	PS1+="\[${DARKGRAY}\](\[${CYAN}\]\$(date +%a) $(date +%b-'%-m')" # Date
-	PS1+="${BLUE} $(date +'%-I':%M:%S%P)\[${DARKGRAY}\])-" # Time
+	PS1+="\[${DARKGRAY}\](\[${BLUE}\]\$(date +%a) $(date +%b-'%-m')" # Date
+	PS1+=" $(date +'%-I':%M:%S%P)\[${DARKGRAY}\])-" # Time
 
 	# CPU
 	PS1+="(\[${MAGENTA}\]CPU $(cpu)%\[${DARKGRAY}\])-"
@@ -154,7 +154,7 @@ function __setprompt
 	fi
 
 	# Current directory
-	PS1+="\[${DARKGRAY}\]:\[${BROWN}\]\w\[${DARKGRAY}\])"
+	PS1+="\[${DARKGRAY}\]:\[${GREEN}\]\w\[${DARKGRAY}\])"
 
 	# Total size of files in current directory
 	# PS1+="(\[${GREEN}\]$(/bin/ls -lah | /bin/grep -m 1 total | /bin/sed 's/total //')\[${DARKGRAY}\]:"
