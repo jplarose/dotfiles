@@ -13,6 +13,7 @@
 alias ls='ls -la --color=auto'
 alias grep='grep --color=auto'
 alias rg='rg -. -M 100 -i --no-messages --color=auto'
+alias yt='yt-dlp -f "bv*+ba/b" --merge-output-format mp4 --embed-metadata --embed-thumbnail'
 
 # Custom Aliases
 alias dev='cd /home/jlarose/Dev'
