@@ -42,7 +42,6 @@ PS1='[\u@\h \W]\$ '
 
 # Path
 export PATH="$HOME/.local/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
 
 #######################################################
 # Custom Functions
@@ -87,7 +86,7 @@ function __setprompt
 	local NOCOLOR="\033[0m"
 
 	# Show error exit code if there is one
-	if [[ $LAST_COMMAND != 0 ]]; then
+	if [[ $LAST_COMMAND -gt 1 ]]; then
 		# PS1="\[${RED}\](\[${LIGHTRED}\]ERROR\[${RED}\])-(\[${LIGHTRED}\]Exit Code \[${WHITE}\]${LAST_COMMAND}\[${RED}\])-(\[${LIGHTRED}\]"
 		PS1="\[${DARKGRAY}\](\[${LIGHTRED}\]ERROR\[${DARKGRAY}\])-(\[${RED}\]Exit Code \[${LIGHTRED}\]${LAST_COMMAND}\[${DARKGRAY}\])-(\[${RED}\]"
 		if [[ $LAST_COMMAND == 1 ]]; then
