@@ -48,6 +48,38 @@ export PATH="$HOME/.local/bin:$PATH"
 # Custom Functions
 #######################################################
 
+# yt-dlp Playlist and Formatting
+yta() {
+  local staging_base="$HOME/Music/_staging/ytplxflac"
+  local run_dir
+  run_dir="$(mktemp -d "$staging_base.XXXXXXXX")" || return 1
+
+  mkdir -p "$run_dir" "$HOME/.config/yt-dlp" || return 1
+
+  yt-dlp \
+    -f "bestaudio[acodec=opus]/bestaudio/best" \
+    -x --audio-format flac --audio-quality 0 \
+    --embed-metadata \
+    --embed-thumbnail \
+    --download-archive "$HOME/.config/yt-dlp/plex-audio-archive.txt" \
+    --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s" \
+    --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s" \
+    --parse-metadata "%(playlist_title|Singles)s:%(meta_album)s" \
+    --parse-metadata "%(playlist_index|0)s:%(meta_track)s" \
+    -o "$run_dir/%(uploader|Unknown Artist)s/%(playlist_title|Singles)s/%(playlist_index|0)02d - %(title)s.%(ext)s" \
+    "$@" || {
+      echo "yt-dlp download failed"
+      rm -rf "$run_dir"
+      return 1
+    }
+
+  beet import "$run_dir"
+  local beet_status=$?
+
+  rm -rf "$run_dir"
+  return "$beet_status"
+}
+
 #Automatically do an ls after each cd
  cd ()
  {
