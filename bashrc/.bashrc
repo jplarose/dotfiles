@@ -58,7 +58,7 @@ export PATH="$HOME/.local/bin:$PATH"
  	fi
  }
 
-eval "$(oh-my-posh init bash --config ~/.config/plague.omp.json)"
+eval "$(oh-my-posh init bash --config ~/.config/omp/takuya.omp.json)"
 
 # Load machine-local aliases last so they override repo defaults
 if [ -f ~/.bash_aliases ]; then
