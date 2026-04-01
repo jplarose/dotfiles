@@ -1,0 +1,33 @@
+directory: ~/Music/Plex
+library: ~/.config/beets/library.db
+
+import:
+  move: yes
+  copy: no
+  write: yes
+  autotag: yes
+  resume: ask
+  incremental: no
+  timid: no
+  quiet: no
+  quiet_fallback: skip
+  group_albums: no
+  from_scratch: no
+  log: ~/.config/beets/import.log
+
+paths:
+  default: $albumartist/$album/$track - $title
+  singleton: Singles/$artist/$title
+
+replace:
+  '[\\/]': _
+  '^\.': _
+  '[\x00-\x1f]': _
+  '[<>:"\?\*\|]': _
+  '\s+$': ''
+  '^\s+': ''
+
+art_filename: cover
+threaded: yes
+per_disc_numbering: no
+plugins: []
