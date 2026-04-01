@@ -58,11 +58,19 @@ export PATH="$HOME/.local/bin:$PATH"
  	fi
  }
 
+# Get the current directories git branch if it has one
+parse_git_branch() {
+  local branch
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+  if [[ -n "$branch" && "$branch" != "HEAD" ]]; then
+    echo "($branch)"
+  fi
+}
+
 #######################################################
 # Set the ultimate amazing command prompt
 #######################################################
 
-alias cpu="grep 'cpu ' /proc/stat | awk '{usage=(\$2+\$4)*100/(\$2+\$4+\$5)} END {print usage}' | awk '{printf(\"%.1f\n\", \$1)}'"
 function __setprompt
 {
 	local LAST_COMMAND=$? # Must come first!
@@ -129,21 +137,8 @@ function __setprompt
 	fi
 
 	# Date
-	PS1+="\[${DARKGRAY}\](\[${BLUE}\]\$(date +%a) $(date +%b-'%-m')" # Date
-	PS1+=" $(date +'%-I':%M:%S%P)\[${DARKGRAY}\])-" # Time
-
-	# CPU
-	PS1+="(\[${MAGENTA}\]CPU $(cpu)%\[${DARKGRAY}\])-"
-
-	# Jobs
-	#PS1+="\[${DARKGRAY}\]:\[${MAGENTA}\]\j"
-
-	# Network Connections (for a server - comment out for non-server)
-	PS1+="\[${DARKGRAY}\]"
-	# :\[${MAGENTA}\]Net $(awk 'END {print NR}' /proc/net/tcp)"
-
-	#PS1+="\[${DARKGRAY}\])-"
-
+	PS1+="\[${DARKGRAY}\](\[${BLUE}\]\$(date +%H:%M)\[${DARKGRAY}\])-"
+	
 	# User and server
 	local SSH_IP=`echo $SSH_CLIENT | awk '{ print $1 }'`
 	local SSH2_IP=`echo $SSH2_CLIENT | awk '{ print $1 }'`
@@ -154,14 +149,10 @@ function __setprompt
 	fi
 
 	# Current directory
-	PS1+="\[${DARKGRAY}\]:\[${GREEN}\]\w\[${DARKGRAY}\])"
-
-	# Total size of files in current directory
-	# PS1+="(\[${GREEN}\]$(/bin/ls -lah | /bin/grep -m 1 total | /bin/sed 's/total //')\[${DARKGRAY}\]:"
-
-	# Number of files
-	# PS1+="\[${GREEN}\]\$(/bin/ls -A -1 | /usr/bin/wc -l)\[${DARKGRAY}\])"
-
+	PS1+="\[${DARKGRAY}\]:\[${GREEN}\]\w"
+	PS1+="\[${YELLOW}\]\$(parse_git_branch)"
+	PS1+="\[${DARKGRAY}\])"
+	
 	# Skip to the next line
 	PS1+="\n"
 
