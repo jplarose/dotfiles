@@ -1,0 +1,41 @@
+layout {
+
+    // Global initial directory for all of the tabs here
+    cwd "~/Dev"
+
+    // Use the compact status bar
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="compact-bar"
+        }
+        children
+    }
+
+    // Tab 1: Basic shell window
+    tab name="CLI" focus=true {
+        pane name="Dev" 
+    }
+
+    // Tab 2: Dev workflow — editor on top, two command panes on bottom
+    tab name="Apps" {
+        pane split_direction="vertical" {
+            pane name="UI"
+            pane name="Api"
+        }
+    }
+
+    // Tab 3: Monitoring — three command panes stacked horizontally
+    tab name="AI" {
+        pane stacked=true {
+		pane name="Claude" command="claude" start_suspended=true
+		pane name="Codex" command="codex" start_suspended=true
+	}
+    }
+
+    // Tab 4: Mixed — shell panes alongside a long-running command
+    tab name="Nvim" {
+        pane name="Nvim" command="nvim" {
+		args "."
+	}
+    }
+}
