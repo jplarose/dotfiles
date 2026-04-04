@@ -501,6 +501,16 @@ require('lazy').setup({
         cssls = {},
         html = {},
         marksman = {},
+        postgres_lsp = {
+          cmd = { 'postgres-language-server', 'lsp-proxy' },
+          root_dir = function(bufnr, on_dir)
+            local fname = vim.api.nvim_buf_get_name(bufnr)
+            local root = vim.fs.root(fname, { 'postgres-language-server.jsonc' }) or vim.fs.dirname(fname)
+
+            on_dir(root)
+          end,
+          workspace_required = false,
+        },
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
@@ -556,6 +566,7 @@ require('lazy').setup({
         'lua-language-server', -- Lua Language server
         'stylua', -- Used to format Lua code
         'csharp-language-server',
+        'postgres-language-server',
         'typescript-language-server',
         'css-lsp',
         'html-lsp',
