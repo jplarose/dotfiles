@@ -61,22 +61,36 @@ yta() {
     -x --audio-format flac --audio-quality 0 \
     --embed-metadata \
     --embed-thumbnail \
+	--ignore-errors \
+	--no-abort-on-error \
     --download-archive "$HOME/.config/yt-dlp/plex-audio-archive.txt" \
     --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s" \
     --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s" \
     --parse-metadata "%(playlist_title|Singles)s:%(meta_album)s" \
     --parse-metadata "%(playlist_index|0)s:%(meta_track)s" \
     -o "$run_dir/%(uploader|Unknown Artist)s/%(playlist_title|Singles)s/%(playlist_index|0)02d - %(title)s.%(ext)s" \
-    "$@" || {
-      echo "yt-dlp download failed"
-      rm -rf "$run_dir"
-      return 1
-    }
+    "$@"
+	ytdlp_status=$?
+
+  if ! find "$run_dir" -type f | grep -q .; then
+    echo "yt-dlp downloaded no files" >&2
+    rm -rf "$run_dir"
+    return 1
+  fi
+
+  if [ "$ytdlp_status" -ne 0 ]; then
+    echo "yt-dlp reported some errors, but downloaded files were kept; continuing to beets" >&2
+  fi
 
   beet import "$run_dir"
-  local beet_status=$?
+  beet_status=$?
 
-  rm -rf "$run_dir"
+  if [ "$beet_status" -eq 0 ]; then
+    rm -rf "$run_dir"
+  else
+    echo "beets import failed; keeping staging directory: $run_dir" >&2
+  fi
+
   return "$beet_status"
 }
 

@@ -1,4 +1,4 @@
-directory: ~/Music/Plex
+directory: /mnt/f/Torrents/YtAudio/Plex/
 library: ~/.config/beets/library.db
 
 import:
@@ -17,7 +17,6 @@ import:
 
 paths:
   default: $albumartist/$album/$track - $title
-  singleton: Singles/$artist/$title
 
 replace:
   '[\\/]': _
@@ -30,4 +29,23 @@ replace:
 art_filename: cover
 threaded: yes
 per_disc_numbering: no
-plugins: []
+plugins: 
+    - musicbrainz
+    
+musicbrainz:
+  host: musicbrainz.org
+  https: yes
+  ratelimit: 1
+  ratelimit_interval: 1.0
+  extra_tags: []
+  genres: yes
+  genres_tag: genre
+  external_ids:
+    discogs: no
+    bandcamp: no
+    spotify: no
+    deezer: no
+    beatport: no
+    tidal: no
+  data_source_mismatch_penalty: 0.5
+  search_limit: 5
