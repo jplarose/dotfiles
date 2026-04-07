@@ -17,7 +17,7 @@ alias yt='yt-dlp -f "bv*+ba/b" --merge-output-format mp4 --embed-metadata --embe
 
 # Custom Aliases
 alias dev='cd /home/jlarose/Dev'
-
+alias ss='cbonsai -l -t 0.75 -i -w 10 -L 75 -M 12'
 #######################################################
 # Common Settings Tweaks
 #######################################################
