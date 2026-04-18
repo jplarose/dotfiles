@@ -501,6 +501,7 @@ require('lazy').setup({
         cssls = {},
         html = {},
         marksman = {},
+        gopls = {},
         postgres_lsp = {
           cmd = { 'postgres-language-server', 'lsp-proxy' },
           root_dir = function(bufnr, on_dir)
@@ -570,6 +571,7 @@ require('lazy').setup({
         'typescript-language-server',
         'css-lsp',
         'html-lsp',
+        'gopls',
         -- You can add other tools here that you want Mason to install
       }
 

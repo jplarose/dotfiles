@@ -19,3 +19,7 @@ Thumbs.db
 
 # neovim swap files
 *.swp
+
+# Beets local info
+./beets/.config/beets/import.log
+./beets/.config/beets/library.db
