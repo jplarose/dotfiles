@@ -25,7 +25,7 @@ local lsp_mappings = {
   { 'gr', vim.lsp.buf.references, desc = 'Go to Reference' },
   { 'gi', vim.lsp.buf.implementation, desc = 'Go to Implementation' },
   { 'gb', '<C-o>', desc = 'Go back through page history' },
-  { 'K', vim.lsp.buf.hover, desc = 'Show hover information' },
+  { '<leader>gh', vim.lsp.buf.hover, desc = 'Show hover information' },
   { '<leader>rn', vim.lsp.buf.rename, desc = 'Rename' },
 }
 
