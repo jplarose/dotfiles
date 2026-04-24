@@ -104,6 +104,35 @@ yta() {
  	fi
  }
 
+#Combine common git commands into a single command
+gitit() {
+  local msg=""
+
+  # Parse -m "message"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -m|--message)
+        shift
+        msg="$1"
+        ;;
+      *)
+        echo "Unknown argument: $1"
+        return 1
+        ;;
+    esac
+    shift
+  done
+
+  if [[ -z "$msg" ]]; then
+    echo "Commit message required: gitit -m \"your message\""
+    return 1
+  fi
+
+  git add . &&
+  git commit -m "$msg" &&
+  git push
+}
+
 eval "$(oh-my-posh init bash --config ~/.config/omp/takuya.omp.json)"
 
 # Load machine-local aliases last so they override repo defaults
