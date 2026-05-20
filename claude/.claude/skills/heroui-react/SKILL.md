@@ -15,7 +15,7 @@ HeroUI v3 is a component library built on **Tailwind CSS v4** and **React Aria C
 ## Installation
 
 ```bash
-/home/jlarose/heroui.sh
+"$HEROUI_INSTALL_SCRIPT"
 ```
 
 ---

@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DECISIONS_FILE="$DOTFILES_DIR/.decisions"
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+
+decisions_get() {
+    local pkg="$1"
+    [[ -f "$DECISIONS_FILE" ]] || return 0
+    awk -F= -v pkg="$pkg" '$1 == pkg { print $2; exit }' "$DECISIONS_FILE"
+}
+
+is_package_dir() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 1
+    local entry
+    for entry in "$dir"/.[!.]*; do
+        [[ -e "$entry" ]] && return 0
+    done
+    return 1
+}
+
+if ! command_exists stow; then
+    echo "[post-merge] stow is not installed; skipping dotfile restow." >&2
+    exit 0
+fi
+
+if ! git -C "$DOTFILES_DIR" rev-parse --verify ORIG_HEAD >/dev/null 2>&1; then
+    exit 0
+fi
+
+changed_packages="$(
+    git -C "$DOTFILES_DIR" diff --name-only ORIG_HEAD HEAD |
+        awk -F/ 'NF > 1 { print $1 }' |
+        sort -u
+)"
+
+[[ -n "$changed_packages" ]] || exit 0
+
+while IFS= read -r pkg; do
+    [[ -n "$pkg" ]] || continue
+    is_package_dir "$DOTFILES_DIR/$pkg" || continue
+    [[ "$(decisions_get "$pkg")" == "y" ]] || continue
+
+    echo "[post-merge] Re-stowing $pkg"
+    stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" "$pkg"
+done <<< "$changed_packages"

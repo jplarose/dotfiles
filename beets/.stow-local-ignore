@@ -1,0 +1,3 @@
+^\.config/beets/import\.log$
+^\.config/beets/library\.db$
+^\.config/beets/state\.pickle$

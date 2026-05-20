@@ -5,11 +5,15 @@ Thumbs.db
 # caches
 .cache/
 .local/share/Trash/
+backups/
+.decisions
 
 # secrets
 *.key
 *.pem
 *.env
+.bash_secrets
+bashrc/.bash_secrets
 
 # ssh keys
 .ssh/
@@ -23,3 +27,4 @@ Thumbs.db
 # Beets local info
 beets/.config/beets/import.log
 beets/.config/beets/library.db
+beets/.config/beets/state.pickle

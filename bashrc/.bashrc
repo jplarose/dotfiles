@@ -5,6 +5,11 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
+# Load machine-local environment variables before aliases/functions use them.
+if [ -f ~/.bash_secrets ]; then
+  . ~/.bash_secrets
+fi
+
 #######################################################
 # Aliases
 #######################################################
@@ -16,7 +21,7 @@ alias rg='rg -. -M 100 -i --no-messages --color=auto'
 alias yt='yt-dlp -f "bv*+ba/b" --merge-output-format mp4 --embed-metadata --embed-thumbnail'
 
 # Custom Aliases
-alias dev='cd /home/jlarose/Dev'
+alias dev='cd "$DEV_DIRECTORY"'
 alias ss='cbonsai -l -t 0.75 -i -w 10 -L 75 -M 12'
 #######################################################
 # Common Settings Tweaks
