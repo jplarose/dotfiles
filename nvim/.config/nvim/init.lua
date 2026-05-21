@@ -572,6 +572,8 @@ require('lazy').setup({
         'css-lsp',
         'html-lsp',
         'gopls',
+        'gh',
+        'gitui',
         -- You can add other tools here that you want Mason to install
       }
 

@@ -140,6 +140,10 @@ gitit() {
 
 eval "$(oh-my-posh init bash --config ~/.config/omp/takuya.omp.json)"
 
+if [ -f ~/.git-completion.bash ]; then
+  . ~/.git-completion.bash
+fi
+
 # Load machine-local aliases last so they override repo defaults
 if [ -f ~/.bash_aliases ]; then
   . ~/.bash_aliases
