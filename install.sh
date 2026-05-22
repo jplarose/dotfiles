@@ -61,7 +61,7 @@ fi
 # ─────────────────────────────────────────────────────────
 echo -e "\n${BOLD}━━━ Step 1: System Upgrade ━━━${NC}"
 info "Running pacman -Syu..."
-sudo pacman -Syu --noconfirm
+# sudo pacman -Syu --noconfirm
 success "System is up to date."
 
 # ─────────────────────────────────────────────────────────
@@ -131,6 +131,7 @@ PACMAN_PACKAGES=(
     yt-dlp
     zellij
     tree-sitter-cli
+    tea
 )
 
 info "Installing ${#PACMAN_PACKAGES[@]} official packages..."
