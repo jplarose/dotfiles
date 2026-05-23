@@ -1,4 +1,5 @@
-directory: /mnt/f/Torrents/YtAudio/Plex/
+# directory: /mnt/f/Torrents/YtAudio/Plex/
+directory: $BEETS_DIR
 library: ~/.config/beets/library.db
 
 import:
