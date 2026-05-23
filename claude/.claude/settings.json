@@ -1,4 +1,16 @@
 {
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, re\ndata = json.load(sys.stdin)\nprompt = data.get('prompt', '') + ' ' + data.get('message', '')\nif re.search(r'(#\\\\d+|issue\\\\s+#?\\\\d+|github\\\\s+issue|gitea\\\\s+issue)', prompt, re.IGNORECASE):\n    print(json.dumps({'hookSpecificOutput': {'hookEventName': 'UserPromptSubmit', 'additionalContext': 'REMINDER: GitHub or Gitea issue reference detected. Invoke issue-task-start skill BEFORE any other action. This is mandatory - do not skip.'}}))\n\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(git:*)",
