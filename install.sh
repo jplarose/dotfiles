@@ -24,6 +24,22 @@ warn()    { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error()   { echo -e "${RED}[ERR]${NC}  $*" >&2; }
 
 command_exists() { command -v "$1" &>/dev/null; }
+paru_works() { command_exists paru && paru --version &>/dev/null; }
+
+install_paru_from_source() {
+    info "Installing paru from source..."
+
+    # paru requires base-devel and git to build
+    sudo pacman -S --needed --noconfirm base-devel git
+
+    local paru_build_dir
+    paru_build_dir="$(mktemp -d)"
+    git clone https://aur.archlinux.org/paru.git "$paru_build_dir/paru"
+    pushd "$paru_build_dir/paru" > /dev/null
+    makepkg -si --noconfirm
+    popd > /dev/null
+    rm -rf "$paru_build_dir"
+}
 
 # ── Preflight checks ────────────────────────────────────
 if [[ $EUID -eq 0 ]]; then
@@ -69,23 +85,17 @@ success "System is up to date."
 # ─────────────────────────────────────────────────────────
 echo -e "\n${BOLD}━━━ Step 2: Install paru ━━━${NC}"
 
-if command_exists paru; then
+if paru_works; then
     success "paru is already installed ($(paru --version | head -1))"
 else
-    info "Installing paru from source..."
-
-    # paru requires base-devel and git to build
-    sudo pacman -S --needed --noconfirm base-devel git
-
-    PARU_BUILD_DIR="$(mktemp -d)"
-    git clone https://aur.archlinux.org/paru.git "$PARU_BUILD_DIR/paru"
-    pushd "$PARU_BUILD_DIR/paru" > /dev/null
-    makepkg -si --noconfirm
-    popd > /dev/null
-    rm -rf "$PARU_BUILD_DIR"
-
     if command_exists paru; then
-        success "paru installed successfully."
+        warn "paru is installed but not usable. Rebuilding it against the current pacman/libalpm."
+    fi
+
+    install_paru_from_source
+
+    if paru_works; then
+        success "paru installed successfully ($(paru --version | head -1))"
     else
         error "paru installation failed. Cannot continue with AUR packages."
         exit 1
