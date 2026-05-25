@@ -1,9 +1,7 @@
-
 ---
-
 name: gitea-tea-cli
-description: Use the Gitea `tea` CLI to inspect repositories, issues, pull requests, releases, and related Gitea workflows from the terminal.
----------------------------------------------------------------------------------------------------------------------------------------------
+description: Use when working with Gitea repositories, issues, pull requests, releases, or related terminal workflows through the tea CLI.
+---
 
 # Gitea Tea CLI Skill
 
@@ -119,14 +117,20 @@ tea issues list --state all
 ### View an issue
 
 ```bash
-tea issues view <number>
+tea issues <number>
+tea issues <number> --comments
+tea issues <number> --fields index,title,body,comments
 ```
+
+Do not use `tea issues view <number>` unless `tea issues --help` shows a `view` subcommand. In the local `tea` version used here, `issues` accepts the issue index directly; `tea issues view <number>` is parsed like a list command and returns the issue list instead of issue details.
 
 ### Comment on an issue
 
 ```bash
-tea issues comment <number> "message"
+tea comment <number> "message"
 ```
+
+`tea issues` has no `comment` subcommand in the local CLI. Comments are created with the top-level `tea comment` command.
 
 ### Create an issue
 
@@ -219,6 +223,7 @@ If `tea` cannot detect the repo:
 ```bash
 git remote -v
 tea issues list --repo <owner>/<repo>
+tea issues <number> --repo <owner>/<repo>
 ```
 
 If authentication fails:
