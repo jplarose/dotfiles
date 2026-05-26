@@ -74,6 +74,15 @@
           "type": "node"
         },
         {
+          "background": "#ef5350",
+          "foreground": "#ffffff",
+          "leading_diamond": " \ue0b6",
+          "style": "diamond",
+          "template": "{{ if .SSHSession }} \ueba9 {{ .UserName }}@{{ .HostName }} {{ end }}",
+          "trailing_diamond": "\ue0b4",
+          "type": "session"
+        },
+        {
           "background": "#40c4ff",
           "foreground": "#ffffff",
           "invert_powerline": true,
