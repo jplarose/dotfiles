@@ -78,7 +78,7 @@
           "foreground": "#ffffff",
           "leading_diamond": " \ue0b6",
           "style": "diamond",
-          "template": "{{ if .SSHSession }} \ueba9 {{ .UserName }}@{{ .HostName }} {{ end }}",
+          "template": "{{ if or .SSHSession .Env.WSL_DISTRO_NAME }} \ueba9 {{ .UserName }}@{{ .HostName }} {{ end }}",
           "trailing_diamond": "\ue0b4",
           "type": "session"
         },
