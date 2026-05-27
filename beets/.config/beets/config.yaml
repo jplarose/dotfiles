@@ -1,5 +1,5 @@
-# directory: /mnt/f/Torrents/YtAudio/Plex/
-directory: $BEETS_DIR
+# The library directory is supplied by the shell wrapper in ~/.bash_aliases
+# from the machine-local BEETS_DIR environment variable.
 library: ~/.config/beets/library.db
 
 import:

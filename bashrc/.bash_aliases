@@ -18,6 +18,15 @@ alias gnew='git fetch && git pull'
 # Custom Functions
 #######################################################
 
+# Pass the machine-local library directory to beets when BEETS_DIR is set.
+beet() {
+  if [[ -n "${BEETS_DIR:-}" ]]; then
+    command beet --directory "$BEETS_DIR" "$@"
+  else
+    command beet "$@"
+  fi
+}
+
 # yt-dlp Playlist and Formatting
 yta() {
   local staging_base="$HOME/Music/_staging/ytplxflac"
@@ -92,5 +101,4 @@ gitit() {
   git commit -m "$msg" &&
   git push
 }
-
 
