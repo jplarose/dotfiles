@@ -48,11 +48,18 @@ git worktree add .worktrees/$BRANCH $BRANCH
 Copy config files that must not be committed into the worktree. Run from the repo root:
 
 ```bash
-# Copy any .env files present at the root
-[ -f .env ] && cp .env .worktrees/$BRANCH/.env
+# Copy all .env and .env.* files at any depth (covers ui/, src/, nested subdirs)
+find . -maxdepth 5 \( -name ".env" -o -name ".env.*" \) \
+  -not -path "./.worktrees/*" \
+  -not -path "./.git/*" \
+  -not -path "*/node_modules/*" | while read f; do
+    dest=".worktrees/$BRANCH/${f#./}"
+    mkdir -p "$(dirname "$dest")"
+    cp "$f" "$dest"
+done
 
 # Copy appsettings.json files (walk subdirs to find them)
-find . -maxdepth 3 -name "appsettings.json" \
+find . -maxdepth 5 -name "appsettings.json" \
   -not -path "./.worktrees/*" \
   -not -path "./.git/*" | while read f; do
     dest=".worktrees/$BRANCH/${f#./}"
@@ -61,7 +68,7 @@ find . -maxdepth 3 -name "appsettings.json" \
 done
 
 # Copy appsettings.*.json variants
-find . -maxdepth 3 -name "appsettings.*.json" \
+find . -maxdepth 5 -name "appsettings.*.json" \
   -not -path "./.worktrees/*" \
   -not -path "./.git/*" | while read f; do
     dest=".worktrees/$BRANCH/${f#./}"
@@ -120,7 +127,7 @@ chore: update deps (refs #42)
 | View GitHub issue | `gh issue view <N>` |
 | View Gitea issue | `tea issues view <N>` |
 | Create worktree | `git worktree add .worktrees/<branch> -b <branch>` |
-| Copy .env | `cp .env .worktrees/<branch>/.env` |
+| Copy env files | `find . -maxdepth 5 \( -name ".env" -o -name ".env.*" \) -not -path "./.worktrees/*" -not -path "./.git/*" -not -path "*/node_modules/*"` |
 | Push branch | `git -C .worktrees/<branch> push -u origin <branch>` |
 | List worktrees | `git worktree list` |
 | Remove worktree | `git worktree remove .worktrees/<branch>` |
