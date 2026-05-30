@@ -29,19 +29,27 @@ beet() {
 
 # yt-dlp Playlist and Formatting
 yta() {
-  local staging_base="$HOME/Music/_staging/ytplxflac"
-  local run_dir
-  run_dir="$(mktemp -d "$staging_base.XXXXXXXX")" || return 1
+  if [[ -z "${BEETS_DIR:-}" ]]; then
+    echo "BEETS_DIR is not set; refusing to import into beets' default ~/Music directory" >&2
+    return 1
+  fi
 
-  mkdir -p "$run_dir" "$HOME/.config/yt-dlp" || return 1
+  local staging_parent="$BEETS_DIR/_staging"
+  local staging_base="$staging_parent/ytplxflac"
+  local run_dir
+  local ytdlp_status
+  local beet_status
+
+  mkdir -p "$staging_parent" "$HOME/.config/yt-dlp" || return 1
+  run_dir="$(mktemp -d "$staging_base.XXXXXXXX")" || return 1
 
   yt-dlp \
     -f "bestaudio[acodec=opus]/bestaudio/best" \
     -x --audio-format flac --audio-quality 0 \
     --embed-metadata \
     --embed-thumbnail \
-	--ignore-errors \
-	--no-abort-on-error \
+    --ignore-errors \
+    --no-abort-on-error \
     --download-archive "$HOME/.config/yt-dlp/plex-audio-archive.txt" \
     --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s" \
     --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s" \
@@ -49,7 +57,7 @@ yta() {
     --parse-metadata "%(playlist_index|0)s:%(meta_track)s" \
     -o "$run_dir/%(uploader|Unknown Artist)s/%(playlist_title|Singles)s/%(playlist_index|0)02d - %(title)s.%(ext)s" \
     "$@"
-	ytdlp_status=$?
+  ytdlp_status=$?
 
   if ! find "$run_dir" -type f | grep -q .; then
     echo "yt-dlp downloaded no files" >&2
@@ -61,7 +69,7 @@ yta() {
     echo "yt-dlp reported some errors, but downloaded files were kept; continuing to beets" >&2
   fi
 
-  beet import "$run_dir"
+  command beet --directory "$BEETS_DIR" import "$run_dir"
   beet_status=$?
 
   if [ "$beet_status" -eq 0 ]; then
@@ -101,4 +109,3 @@ gitit() {
   git commit -m "$msg" &&
   git push
 }
-
