@@ -38,4 +38,12 @@ layout {
 		args "."
 	}
     }
+
+    tab name="SSH" {
+        pane name="SSH"
+    }
+
+    tab name="Harlequin" {
+        pane name="Postgres" command="harlequin"
+    }
 }
