@@ -14,6 +14,10 @@ alias ss='cbonsai -l -t 0.75 -i -w 10 -L 75 -M 12'
 alias glog='git log --oneline -n 20 --graph'
 alias gnew='git fetch && git pull'
 
+alias vpnup='sudo wg-quick up Framework'
+alias vpndown='sudo wg-quick down Framework'
+alias vpnstatus='sudo wg show'
+
 #######################################################
 # Custom Functions
 #######################################################
