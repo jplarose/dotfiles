@@ -1,4 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(ls:*)",
+      "Bash"
+    ]
+  },
+  "model": "sonnet",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -9,14 +18,6 @@
           }
         ]
       }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(npm:*)",
-      "Bash(ls:*)",
-      "Bash"
     ]
   },
   "enabledPlugins": {
