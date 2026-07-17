@@ -113,7 +113,7 @@ PACMAN_PACKAGES=(
     aspnet-targeting-pack
     base
     base-devel
-    beets
+#    beets
     dotnet-runtime
     dotnet-sdk
     dotnet-sdk-8.0
@@ -122,7 +122,7 @@ PACMAN_PACKAGES=(
     gcc
     git
     github-cli
-    glow
+#   glow
     go
     jq
     make
@@ -130,15 +130,15 @@ PACMAN_PACKAGES=(
     man-pages
     nano
     neovim
-    nodejs
-    npm
+#    nodejs
+#    npm
     opencode
     ripgrep
     stow
     sudo
     unzip
     which
-    yt-dlp
+#    yt-dlp
     zellij
     tree-sitter-cli
     tea
@@ -154,7 +154,7 @@ success "Official packages installed."
 echo -e "\n${BOLD}━━━ Step 4: AUR Packages ━━━${NC}"
 
 AUR_PACKAGES=(
-    cbonsai
+#    cbonsai
     oh-my-posh
 )
 
