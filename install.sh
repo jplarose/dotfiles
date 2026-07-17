@@ -142,6 +142,7 @@ PACMAN_PACKAGES=(
     zellij
     tree-sitter-cli
     tea
+    nvm
 )
 
 info "Installing ${#PACMAN_PACKAGES[@]} official packages..."
