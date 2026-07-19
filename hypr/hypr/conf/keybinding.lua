@@ -6,28 +6,9 @@ hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd("kitty"), { description = "Open 
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("firefox"), { description = "Open the browser" })
 hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc"), { description = "Open calculator" })
 
--- fr keyboard layout setup
-local is_fr = false
-local f = io.open(os.getenv("HOME") .. "/.config/hypr/input.lua", "r")
-if f then
-    local content = f:read("*all")
-    if content:match('kb_layout%s*=%s*"fr"') and not content:match('kb_variant%s*=%s*"us"') then
-        is_fr = true
-    end
-    f:close()
-end
-
-local fr_keys = {
-    "ampersand", "eacute", "quotedbl", "apostrophe", "parenleft",
-    "minus", "egrave", "underscore", "ccedilla", "agrave"
-}
-
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
-    if is_fr then
-        key = fr_keys[i]
-    end
     hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }), { description = "Focus workspace " .. i })
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }), { description = "Move window to workspace " .. i })
 end
@@ -72,7 +53,7 @@ hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"), { description = "Lock sc
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), { description = "Switch to next workspace" })
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), { description = "Switch to previous workspace" })
 
--- Laptop multimedia keys for volume and LCD brightness
+-- Multimedia and brightness keys
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true, description = "Raise volume" })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true, repeating = true, description = "Lower volume" })
 hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true, repeating = true, description = "Mute audio" })

@@ -8,6 +8,10 @@ BEGIN {
     mod_map[8]  = "ALT"
     mod_map[4]  = "CTRL"
     mod_map[1]  = "SHIFT"
+    mod_order[1] = 64
+    mod_order[2] = 8
+    mod_order[3] = 4
+    mod_order[4] = 1
 }
 {
     # Extract values from jq JSON string
@@ -22,7 +26,8 @@ BEGIN {
 
     # Reconstruct modifier names from mask
     mods = ""
-    for (bit in mod_map) {
+    for (i = 1; i <= 4; i++) {
+        bit = mod_order[i]
         if (and(modmask, bit)) {
             mods = (mods == "" ? mod_map[bit] : mods " + " mod_map[bit])
         }
@@ -37,4 +42,4 @@ BEGIN {
 
     # Output: Line 1 (Keys), Line 2 (Description), followed by the Null separator
     printf "%s\n➔ %s\0", combo, desc
-}' | rofi -dmenu -i -replace -p "Keybinds" -sep '\0' -eh 2 -config ~/.config/rofi/config-compact.rasi
+}' | rofi -dmenu -i -replace -p "Keybinds" -sep '\0' -eh 2
