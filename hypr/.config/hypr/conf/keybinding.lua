@@ -6,6 +6,7 @@ hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd("kitty"), { description = "Open 
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("firefox"), { description = "Open the browser" })
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("chrome"), { description = "Open the secondary browser" })
 hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc"), { description = "Open calculator" })
+hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("slack"), { description = "Open Slack" })
 
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
 for i = 1, 10 do
@@ -88,7 +89,11 @@ hl.bind(mainMod .. " + ALT + down", hl.dsp.window.swap({ direction = "d" }), { d
 
 -- Actions
 hl.bind(mainMod .. " + CTRL + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "Reload Hyprland configuration" })
-hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exec_cmd("hyprctl dispatch exit"), { description = "Exit Hyprland session" })
+hl.bind(
+	mainMod .. " + SHIFT + E",
+	hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"),
+	{ description = "Exit Hyprland session" }
+)
 hl.bind(
 	mainMod .. " + PRINT",
 	hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot.sh"),
