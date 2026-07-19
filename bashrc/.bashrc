@@ -57,5 +57,5 @@ if [ -f ~/.bash_aliases ]; then
   . ~/.bash_aliases
 fi
 
-source /usr/share/nvm/init-nvm.sh
-source /usr/share/nvm/bash_completion
+source ~/.nvm/nvm.sh
+source ~/.nvm/bash_completion
