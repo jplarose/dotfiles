@@ -1,2 +1,9 @@
-local name = "default.lua"
-load_variant(name,"layouts")
+hl.config({
+    general = { layout = "dwindle" },
+    dwindle = { preserve_split = true },
+    binds = {
+        workspace_back_and_forth = false,
+        allow_workspace_cycles = true,
+        pass_mouse_when_bound = false,
+    },
+})
