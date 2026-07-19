@@ -113,7 +113,46 @@ PACMAN_PACKAGES=(
     aspnet-targeting-pack
     base
     base-devel
-#    beets
+    # Hyprland desktop runtime
+    hyprland
+    hypridle
+    hyprlock
+    hyprpaper
+    hyprpolkitagent
+    xdg-desktop-portal
+    xdg-desktop-portal-hyprland
+    waybar
+    kitty
+    rofi
+    swaync
+
+    # Hyprland tools: clipboard, screenshots, OCR, and calculator
+    wl-clipboard
+    cliphist
+    grim
+    slurp
+    imagemagick
+    tesseract
+    tesseract-data-eng
+    libqalculate
+    jq
+
+    # Audio, media, display, and desktop applications
+    pipewire
+    pipewire-audio
+    wireplumber
+    playerctl
+    pavucontrol
+    brightnessctl
+    firefox
+
+    # Fonts referenced by Kitty, Hyprlock, and Waybar
+    ttf-jetbrains-mono-nerd
+    ttf-fira-sans
+    otf-font-awesome
+
+    # Terminal and editor configuration runtime
+    beets
     dotnet-runtime
     dotnet-sdk
     dotnet-sdk-8.0
@@ -121,19 +160,21 @@ PACMAN_PACKAGES=(
     fd
     gcc
     git
+    gitui
     github-cli
 #   glow
     go
-    jq
     make
     man-db
     man-pages
     nano
     neovim
+    lua-language-server
 #    nodejs
 #    npm
     opencode
     ripgrep
+    stylua
     stow
     sudo
     unzip
