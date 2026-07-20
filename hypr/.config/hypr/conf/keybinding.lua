@@ -11,6 +11,7 @@ hl.bind(
 )
 hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc"), { description = "Open calculator" })
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("slack"), { description = "Open Slack" })
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zoom"), { description = "Open Zoom" })
 
 -- A logical workspace is one workspace per enabled monitor.  The workspace
 -- manager switches every monitor to its corresponding workspace in grouped
@@ -28,7 +29,11 @@ for i = 1, 9 do
 		{ description = "Move window to logical workspace " .. i }
 	)
 end
-hl.bind(mainMod .. " + CTRL + W", hl.dsp.exec_cmd("hypr-workspace-manager toggle-mode"), { description = "Toggle workspace mode" })
+hl.bind(
+	mainMod .. " + CTRL + W",
+	hl.dsp.exec_cmd("hypr-workspace-manager toggle-mode"),
+	{ description = "Toggle workspace mode" }
+)
 -- Windows
 hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Close active window" })
 hl.bind(
@@ -142,10 +147,26 @@ hl.bind(
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"), { description = "Lock screen" })
 
 -- Scroll through open logical workspace groups with mainMod + scroll.
-hl.bind(mainMod .. " + mouse_down", hl.dsp.exec_cmd("hypr-workspace-manager cycle next"), { description = "Switch to next open workspace group" })
-hl.bind(mainMod .. " + mouse_up", hl.dsp.exec_cmd("hypr-workspace-manager cycle previous"), { description = "Switch to previous open workspace group" })
-hl.bind(mainMod .. " + SHIFT + mouse_down", hl.dsp.exec_cmd("hypr-workspace-manager move-cycle next"), { description = "Move window to next open workspace group" })
-hl.bind(mainMod .. " + SHIFT + mouse_up", hl.dsp.exec_cmd("hypr-workspace-manager move-cycle previous"), { description = "Move window to previous open workspace group" })
+hl.bind(
+	mainMod .. " + mouse_down",
+	hl.dsp.exec_cmd("hypr-workspace-manager cycle next"),
+	{ description = "Switch to next open workspace group" }
+)
+hl.bind(
+	mainMod .. " + mouse_up",
+	hl.dsp.exec_cmd("hypr-workspace-manager cycle previous"),
+	{ description = "Switch to previous open workspace group" }
+)
+hl.bind(
+	mainMod .. " + SHIFT + mouse_down",
+	hl.dsp.exec_cmd("hypr-workspace-manager move-cycle next"),
+	{ description = "Move window to next open workspace group" }
+)
+hl.bind(
+	mainMod .. " + SHIFT + mouse_up",
+	hl.dsp.exec_cmd("hypr-workspace-manager move-cycle previous"),
+	{ description = "Move window to previous open workspace group" }
+)
 
 -- Multimedia and brightness keys
 hl.bind(
