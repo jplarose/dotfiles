@@ -2,7 +2,7 @@
     /* `otf-font-awesome` is required to be installed for icons */
 	/* `Material-Icons` is required for notification cneter */
     font-family: "Fira Sans Semibold", "Font Awesome 7 Free", "Font Awesome 7 Brands", "Font Awesome 6 Free", "Font Awesome 6 Brands", FontAwesome, Roboto, Helvetica, Arial, sans-serif;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 window#waybar {
@@ -89,13 +89,17 @@ button:hover {
 #idle_inhibitor,
 #scratchpad,
 #mpd {
-    padding: 0 10px;
+    padding: 0 12px;
     color: #ffffff;
 }
 
 #window,
 #workspaces {
     margin: 0 4px;
+}
+
+#workspaces button {
+    font-size: 14px;
 }
 
 /* If workspaces is the leftmost module, omit left margin */
