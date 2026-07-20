@@ -7,7 +7,7 @@ state_file="$runtime_dir/hypr-workspace-mode"
 lock_file="$runtime_dir/hypr-workspace-manager.lock"
 
 usage() {
-    echo "Usage: $(basename "$0") {focus|move|cycle|move-cycle|reconcile|toggle-mode} [1-9|next|previous]" >&2
+    echo "Usage: $(basename "$0") {focus|move|cycle|move-cycle|reconcile|toggle-mode} [workspace|next|previous]" >&2
     exit 2
 }
 
@@ -99,8 +99,13 @@ main() {
     [[ "$action" != "reconcile" || "$selected_mode" == "grouped" ]] || return 0
     if [[ "$action" == "reconcile" ]]; then
         [[ "$count" -gt 1 ]] || return 0
-        target="$(monitors_json | jq -r '.[] | select(.focused == true) | .activeWorkspace.id' | head -n1)"
-        group="$(logical_group_for_workspace "$target" "$count")"
+        if [[ -n "$argument" ]]; then
+            [[ "$argument" =~ ^[1-9][0-9]*$ ]] || usage
+            group="$argument"
+        else
+            target="$(monitors_json | jq -r '.[] | select(.focused == true) | .activeWorkspace.id' | head -n1)"
+            group="$(logical_group_for_workspace "$target" "$count")"
+        fi
     fi
 
     if [[ "$action" == "cycle" || "$action" == "move-cycle" ]]; then

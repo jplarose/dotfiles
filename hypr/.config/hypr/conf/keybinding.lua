@@ -25,8 +25,8 @@ for i = 1, 9 do
 
 	hl.bind(
 		mainMod .. " + SHIFT + " .. i,
-		hl.dsp.exec_cmd("hypr-workspace-manager move " .. i),
-		{ description = "Move window to logical workspace " .. i }
+		hl.dsp.window.move({ workspace = i }),
+		{ description = "Move window to workspace " .. i }
 	)
 end
 hl.bind(
