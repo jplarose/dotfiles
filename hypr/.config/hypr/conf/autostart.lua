@@ -20,6 +20,9 @@ hl.on("hyprland.start", function ()
     -- Start hypridle
     hl.exec_cmd("hypridle")
 
+    -- Reconcile laptop lid and docking policy.
+    hl.exec_cmd("hypr-lid-manager start")
+
     -- Load cliphist history
     hl.exec_cmd("wl-paste --watch cliphist store")
 

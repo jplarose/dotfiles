@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
+state_file="$runtime_dir/hypr-workspace-mode"
+lock_file="$runtime_dir/hypr-workspace-manager.lock"
+
+usage() {
+    echo "Usage: $(basename "$0") {focus|move|cycle|move-cycle|toggle-mode} [1-9|next|previous]" >&2
+    exit 2
+}
+
+notify() {
+    command -v notify-send >/dev/null && notify-send "Hyprland workspaces" "$1" || true
+}
+
+mode() {
+    local selected
+    selected="${HYPR_WORKSPACE_MODE:-grouped}"
+    [[ "$selected" == "grouped" || "$selected" == "focused" ]] || selected="grouped"
+    if [[ -r "$state_file" ]]; then
+        read -r selected < "$state_file" || true
+    fi
+    [[ "$selected" == "grouped" || "$selected" == "focused" ]] || selected="grouped"
+    printf '%s\n' "$selected"
+}
+
+toggle_mode() {
+    local selected
+    selected="$(mode)"
+    if [[ "$selected" == "grouped" ]]; then selected="focused"; else selected="grouped"; fi
+    printf '%s\n' "$selected" > "$state_file"
+    notify "Workspace mode: $selected"
+}
+
+monitors_json() { hyprctl monitors -j; }
+
+enabled_monitors() {
+    monitors_json | jq -r '
+      map(select(.disabled != true))
+      | sort_by(.x, .y, .name)
+      | .[].name
+    '
+}
+
+focused_monitor() { monitors_json | jq -r '.[] | select(.focused == true) | .name' | head -n1; }
+
+dispatch() { hyprctl dispatch "$1" "$2"; }
+
+focus_workspace() { dispatch workspace "$1"; }
+move_window() { dispatch movetoworkspace "$1"; }
+
+logical_group_for_workspace() {
+    local workspace="$1" count="$2"
+    printf '%s\n' "$(((workspace - 1) / count + 1))"
+}
+
+open_groups() {
+    local count="$1"
+    hyprctl workspaces -j | jq -r --argjson count "$count" '
+      [ .[] | select(.id > 0) | ((.id - 1) / $count | floor + 1) ] | unique | .[]
+    '
+}
+
+cycle_group() {
+    local direction="$1" count="$2" current_workspace groups target index=0
+    current_workspace="$(monitors_json | jq -r '.[] | select(.focused == true) | .activeWorkspace.id' | head -n1)"
+    mapfile -t groups < <(open_groups "$count")
+    ((${#groups[@]})) || return 0
+    local current_group
+    current_group="$(logical_group_for_workspace "$current_workspace" "$count")"
+    for i in "${!groups[@]}"; do [[ "${groups[$i]}" == "$current_group" ]] && index="$i"; done
+    if [[ "$direction" == "next" ]]; then
+        index=$(((index + 1) % ${#groups[@]}))
+    else
+        index=$(((index - 1 + ${#groups[@]}) % ${#groups[@]}))
+    fi
+    printf '%s\n' "${groups[$index]}"
+}
+
+main() {
+    [[ $# -ge 1 ]] || usage
+    local action="$1" argument="${2:-}"
+    exec 9>"$lock_file"
+    flock -n 9 || exit 0
+
+    if [[ "$action" == "toggle-mode" ]]; then toggle_mode; return; fi
+    [[ "$action" == "focus" || "$action" == "move" || "$action" == "cycle" || "$action" == "move-cycle" ]] || usage
+
+    mapfile -t monitors < <(enabled_monitors)
+    ((${#monitors[@]})) || { notify "No enabled monitors"; exit 1; }
+    local count="${#monitors[@]}" focused selected_mode target group slot destination
+    focused="$(focused_monitor)"
+    [[ -n "$focused" ]] || { notify "No focused monitor"; exit 1; }
+    selected_mode="$(mode)"
+
+    if [[ "$action" == "cycle" || "$action" == "move-cycle" ]]; then
+        [[ "$argument" == "next" || "$argument" == "previous" ]] || usage
+        if [[ "$selected_mode" == "grouped" && "$count" -gt 1 ]]; then
+            group="$(cycle_group "$argument" "$count")" || return 0
+        else
+            target="e$([[ "$argument" == next ]] && printf '+1' || printf '-1')"
+            [[ "$action" == "cycle" ]] && focus_workspace "$target" || move_window "$target"
+            return
+        fi
+    else
+        [[ "$argument" =~ ^[1-9]$ ]] || usage
+        group="$argument"
+        if [[ "$selected_mode" == "focused" || "$count" -eq 1 ]]; then
+            [[ "$action" == "focus" ]] && focus_workspace "$group" || move_window "$group"
+            return
+        fi
+    fi
+
+    for slot in "${!monitors[@]}"; do
+        if [[ "${monitors[$slot]}" == "$focused" ]]; then
+            destination=$(( (group - 1) * count + slot + 1 ))
+            if [[ "$action" == "move" || "$action" == "move-cycle" ]]; then
+                move_window "$destination"
+                return
+            fi
+        fi
+    done
+
+    for slot in "${!monitors[@]}"; do
+        destination=$(( (group - 1) * count + slot + 1 ))
+        dispatch focusmonitor "${monitors[$slot]}"
+        focus_workspace "$destination"
+    done
+    dispatch focusmonitor "$focused"
+}
+
+main "$@"

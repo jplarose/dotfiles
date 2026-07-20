@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+laptop_monitor="${HYPR_LAPTOP_MONITOR:-eDP-1}"
+runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
+lid_state_file="$runtime_dir/hypr-lid-state"
+lid_inhibitor_pid="$runtime_dir/hypr-lid-switch-inhibitor.pid"
+dock_inhibitor_pid="$runtime_dir/hypr-docked-sleep-inhibitor.pid"
+lock_file="$runtime_dir/hypr-lid-manager.lock"
+
+usage() { echo "Usage: $(basename "$0") {start|close|open|reconcile|idle-dpms|idle-suspend|resume}" >&2; exit 2; }
+monitors() { hyprctl monitors all -j; }
+physical_lid_state() {
+    local state
+    for state in /proc/acpi/button/lid/*/state; do
+        [[ -r "$state" ]] || continue
+        if grep -q 'closed' "$state"; then printf '%s\n' closed; return; fi
+        if grep -q 'open' "$state"; then printf '%s\n' open; return; fi
+    done
+    printf '%s\n' open
+}
+laptop_present() { monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name == $name)' >/dev/null; }
+external_active() { monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name != $name and .disabled != true)' >/dev/null; }
+pid_running() { [[ -r "$1" ]] && kill -0 "$(<"$1")" 2>/dev/null; }
+
+start_inhibitor() {
+    local pid_file="$1" what="$2" why="$3"
+    pid_running "$pid_file" && return
+    systemd-inhibit --what="$what" --mode=block --who=hypr-lid-manager --why="$why" sleep infinity &
+    printf '%s\n' "$!" > "$pid_file"
+}
+stop_inhibitor() {
+    local pid_file="$1"
+    if pid_running "$pid_file"; then kill "$(<"$pid_file")" || true; fi
+    rm -f "$pid_file"
+}
+monitor_enable() { hyprctl keyword monitor "$laptop_monitor,preferred,auto,1"; }
+monitor_disable() { hyprctl keyword monitor "$laptop_monitor,disable"; }
+lock_and_blank_laptop() { loginctl lock-session; hyprctl dispatch dpms off "$laptop_monitor" || true; }
+
+reconcile() {
+    local lid="${1:-}"
+    [[ -n "$lid" ]] || { [[ -r "$lid_state_file" ]] && read -r lid < "$lid_state_file" || lid="$(physical_lid_state)"; }
+    laptop_present || return 0
+    if [[ "$lid" == "open" ]]; then
+        stop_inhibitor "$dock_inhibitor_pid"
+        monitor_enable
+        hyprctl dispatch dpms on "$laptop_monitor" || true
+    elif external_active; then
+        monitor_disable
+        start_inhibitor "$dock_inhibitor_pid" sleep "keep docked session awake"
+    else
+        stop_inhibitor "$dock_inhibitor_pid"
+        monitor_enable
+        lock_and_blank_laptop
+    fi
+}
+
+main() {
+    [[ $# -ge 1 ]] || usage
+    local action="$1"
+    exec 9>"$lock_file"; flock -n 9 || exit 0
+    case "$action" in
+        start)
+            start_inhibitor "$lid_inhibitor_pid" handle-lid-switch "Hyprland manages lid policy"
+            reconcile
+            ;;
+        close|open)
+            printf '%s\n' "$action" > "$lid_state_file"
+            reconcile "$action"
+            ;;
+        reconcile) reconcile ;;
+        idle-dpms) external_active || hyprctl dispatch dpms off ;;
+        idle-suspend) external_active || systemctl suspend ;;
+        resume) reconcile; hyprctl dispatch dpms on || true ;;
+        *) usage ;;
+    esac
+}
+
+main "$@"
