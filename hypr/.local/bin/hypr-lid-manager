@@ -27,7 +27,11 @@ pid_running() { [[ -r "$1" ]] && kill -0 "$(<"$1")" 2>/dev/null; }
 start_inhibitor() {
     local pid_file="$1" what="$2" why="$3"
     pid_running "$pid_file" && return
-    systemd-inhibit --what="$what" --mode=block --who=hypr-lid-manager --why="$why" sleep infinity &
+    # Do not let the long-lived inhibitor inherit the manager's flock fd.
+    # Otherwise it keeps the lock after this invocation exits and every later
+    # lid or monitor-layout event is silently skipped.
+    (exec 9>&-; exec systemd-inhibit --what="$what" --mode=block --who=hypr-lid-manager --why="$why" sleep infinity) \
+        </dev/null >/dev/null 2>&1 &
     printf '%s\n' "$!" > "$pid_file"
 }
 stop_inhibitor() {
@@ -35,21 +39,34 @@ stop_inhibitor() {
     if pid_running "$pid_file"; then kill "$(<"$pid_file")" || true; fi
     rm -f "$pid_file"
 }
-monitor_enable() { hyprctl keyword monitor "$laptop_monitor,preferred,auto,1"; }
-monitor_disable() { hyprctl keyword monitor "$laptop_monitor,disable"; }
-lock_and_blank_laptop() { loginctl lock-session; hyprctl dispatch dpms off "$laptop_monitor" || true; }
+monitor_enable() {
+    hyprctl eval "hl.monitor({ output = \"$laptop_monitor\", mode = \"preferred\", position = \"auto\", scale = 1 })"
+}
+monitor_disable() { hyprctl eval "hl.monitor({ output = \"$laptop_monitor\", disabled = true })"; }
+lock_and_blank_laptop() {
+    loginctl lock-session
+    hyprctl dispatch "hl.dsp.dpms({ action = \"off\", monitor = \"$laptop_monitor\" })" || true
+}
+reconcile_workspaces() { command -v hypr-workspace-manager >/dev/null && hypr-workspace-manager reconcile || true; }
 
 reconcile() {
     local lid="${1:-}"
-    [[ -n "$lid" ]] || { [[ -r "$lid_state_file" ]] && read -r lid < "$lid_state_file" || lid="$(physical_lid_state)"; }
+    # A saved event is useful for the close/open handler itself, but it must
+    # never override the hardware state during startup or dock changes.  A
+    # stale "open" file would otherwise leave eDP-1 enabled after docking
+    # with the lid already closed.
+    [[ -n "$lid" ]] || lid="$(physical_lid_state)"
+    printf '%s\n' "$lid" > "$lid_state_file"
     laptop_present || return 0
     if [[ "$lid" == "open" ]]; then
         stop_inhibitor "$dock_inhibitor_pid"
         monitor_enable
-        hyprctl dispatch dpms on "$laptop_monitor" || true
+        hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
+        reconcile_workspaces
     elif external_active; then
         monitor_disable
         start_inhibitor "$dock_inhibitor_pid" sleep "keep docked session awake"
+        reconcile_workspaces
     else
         stop_inhibitor "$dock_inhibitor_pid"
         monitor_enable
@@ -71,9 +88,9 @@ main() {
             reconcile "$action"
             ;;
         reconcile) reconcile ;;
-        idle-dpms) external_active || hyprctl dispatch dpms off ;;
+        idle-dpms) external_active || hyprctl dispatch 'hl.dsp.dpms({ action = "off" })' ;;
         idle-suspend) external_active || systemctl suspend ;;
-        resume) reconcile; hyprctl dispatch dpms on || true ;;
+        resume) reconcile; hyprctl dispatch 'hl.dsp.dpms({ action = "on" })' || true ;;
         *) usage ;;
     esac
 }
