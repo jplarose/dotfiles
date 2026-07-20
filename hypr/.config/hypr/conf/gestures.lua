@@ -3,8 +3,11 @@
 -------------------------------------------------------
 
 -- Workspaces
-hl.gesture({ fingers = 3, direction = "up", action = function() hl.exec_cmd("hypr-workspace-manager cycle next") end })
-hl.gesture({ fingers = 3, direction = "down", action = function() hl.exec_cmd("hypr-workspace-manager cycle previous") end })
+hl.gesture({
+	fingers = 3,
+	direction = "vertical",
+	action = "workspace",
+})
 
 -- Scrolling
 --hl.gesture({
