@@ -13,9 +13,9 @@ hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("slack"), { description = "Open Slack" })
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zoom"), { description = "Open Zoom" })
 
--- A logical workspace is one workspace per enabled monitor.  The workspace
--- manager switches every monitor to its corresponding workspace in grouped
--- mode, or uses the focused monitor only in focused mode.
+-- A logical workspace is one workspace per visible monitor.  The workspace
+-- manager parks a DPMS-blanked laptop panel while docked, preserving the
+-- existing external-monitor grouping without disabling the physical output.
 for i = 1, 9 do
 	hl.bind(
 		mainMod .. " + " .. i,
@@ -104,6 +104,11 @@ hl.bind(mainMod .. " + ALT + down", hl.dsp.window.swap({ direction = "d" }), { d
 
 -- Actions
 hl.bind(mainMod .. " + CTRL + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "Reload Hyprland configuration" })
+hl.bind(
+	mainMod .. " + CTRL + P",
+	hl.dsp.exec_cmd("hypr-lid-manager panel-on"),
+	{ locked = true, description = "Emergency: restore laptop panel" }
+)
 hl.bind(
 	mainMod .. " + SHIFT + E",
 	hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"),

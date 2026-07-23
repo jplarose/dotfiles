@@ -4,6 +4,8 @@ set -euo pipefail
 
 runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
 state_file="$runtime_dir/hypr-workspace-mode"
+parked_panel_file="$runtime_dir/hypr-lid-parked-panel"
+laptop_monitor="${HYPR_LAPTOP_MONITOR:-eDP-1}"
 lock_file="$runtime_dir/hypr-workspace-manager.lock"
 
 usage() {
@@ -35,16 +37,28 @@ toggle_mode() {
 }
 
 monitors_json() { hyprctl monitors -j; }
+panel_parked() { [[ -r "$parked_panel_file" ]] && [[ "$(<"$parked_panel_file")" == "$laptop_monitor" ]]; }
+
+visible_monitors_json() {
+    local excluded=""
+    panel_parked && excluded="$laptop_monitor"
+    monitors_json | jq --arg excluded "$excluded" 'map(select(.disabled != true and ($excluded == "" or .name != $excluded)))'
+}
 
 enabled_monitors() {
-    monitors_json | jq -r '
-      map(select(.disabled != true))
-      | sort_by(.x, .y, .name)
+    visible_monitors_json | jq -r '
+      sort_by(.x, .y, .name)
       | .[].name
     '
 }
 
-focused_monitor() { monitors_json | jq -r '.[] | select(.focused == true) | .name' | head -n1; }
+focused_monitor() {
+    visible_monitors_json | jq -r '([ .[] | select(.focused == true) ][0].name) // .[0].name // empty'
+}
+workspace_on_monitor() {
+    local monitor="$1"
+    visible_monitors_json | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id' | head -n1
+}
 
 focus_workspace() { hyprctl dispatch "hl.dsp.focus({ workspace = \"$1\", on_current_monitor = true })"; }
 move_window() { hyprctl dispatch "hl.dsp.window.move({ workspace = \"$1\" })"; }
@@ -63,8 +77,9 @@ open_groups() {
 }
 
 cycle_group() {
-    local direction="$1" count="$2" current_workspace groups target index=0
-    current_workspace="$(monitors_json | jq -r '.[] | select(.focused == true) | .activeWorkspace.id' | head -n1)"
+    local direction="$1" count="$2" current_workspace groups target index=0 focused
+    focused="$(focused_monitor)"
+    current_workspace="$(workspace_on_monitor "$focused")"
     mapfile -t groups < <(open_groups "$count")
     ((${#groups[@]})) || return 0
     local current_group
@@ -103,7 +118,7 @@ main() {
             [[ "$argument" =~ ^[1-9][0-9]*$ ]] || usage
             group="$argument"
         else
-            target="$(monitors_json | jq -r '.[] | select(.focused == true) | .activeWorkspace.id' | head -n1)"
+            target="$(workspace_on_monitor "$focused")"
             group="$(logical_group_for_workspace "$target" "$count")"
         fi
     fi

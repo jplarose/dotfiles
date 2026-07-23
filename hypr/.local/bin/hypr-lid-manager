@@ -7,9 +7,10 @@ runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
 lid_state_file="$runtime_dir/hypr-lid-state"
 lid_inhibitor_pid="$runtime_dir/hypr-lid-switch-inhibitor.pid"
 dock_inhibitor_pid="$runtime_dir/hypr-docked-sleep-inhibitor.pid"
+parked_panel_file="$runtime_dir/hypr-lid-parked-panel"
 lock_file="$runtime_dir/hypr-lid-manager.lock"
 
-usage() { echo "Usage: $(basename "$0") {start|close|open|reconcile|idle-dpms|idle-suspend|resume}" >&2; exit 2; }
+usage() { echo "Usage: $(basename "$0") {start|close|open|reconcile|panel-on|idle-dpms|idle-suspend|resume}" >&2; exit 2; }
 monitors() { hyprctl monitors all -j; }
 physical_lid_state() {
     local state
@@ -22,6 +23,9 @@ physical_lid_state() {
 }
 laptop_present() { monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name == $name)' >/dev/null; }
 external_active() { monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name != $name and .disabled != true)' >/dev/null; }
+panel_parked() { [[ -r "$parked_panel_file" ]] && [[ "$(<"$parked_panel_file")" == "$laptop_monitor" ]]; }
+park_panel() { printf '%s\n' "$laptop_monitor" > "$parked_panel_file"; }
+unpark_panel() { rm -f "$parked_panel_file"; }
 pid_running() { [[ -r "$1" ]] && kill -0 "$(<"$1")" 2>/dev/null; }
 
 start_inhibitor() {
@@ -42,17 +46,12 @@ stop_inhibitor() {
 monitor_enable() {
     hyprctl eval "hl.monitor({ output = \"$laptop_monitor\", mode = \"preferred\", position = \"auto\", scale = 1 })"
 }
-monitor_disable() { hyprctl eval "hl.monitor({ output = \"$laptop_monitor\", disabled = true })"; }
-wait_for_monitor_state() {
-    local expected="$1" attempt predicate
-    if [[ "$expected" == "enabled" ]]; then
-        predicate='.[] | select(.name == $name and .disabled != true)'
-    else
-        # Some Hyprland versions omit a disabled connector from this query.
-        predicate='all(.[]; .name != $name or .disabled == true)'
-    fi
+ensure_laptop_enabled() {
+    local attempt
+    monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name == $name and .disabled != true)' >/dev/null && return 0
+    monitor_enable
     for attempt in {1..20}; do
-        if monitors | jq -e --arg name "$laptop_monitor" "$predicate" >/dev/null; then return 0; fi
+        if monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name == $name and .disabled != true)' >/dev/null; then return 0; fi
         sleep 0.1
     done
     return 1
@@ -62,11 +61,13 @@ lock_and_blank_laptop() {
     hyprctl dispatch "hl.dsp.dpms({ action = \"off\", monitor = \"$laptop_monitor\" })" || true
 }
 current_workspace_group() {
-    hyprctl monitors -j | jq -r '
-      map(select(.disabled != true)) as $monitors
+    local excluded=""
+    panel_parked && excluded="$laptop_monitor"
+    hyprctl monitors -j | jq -r --arg excluded "$excluded" '
+      map(select(.disabled != true and ($excluded == "" or .name != $excluded))) as $monitors
       | ($monitors | length) as $count
       | if $count == 0 then 1
-        else ($monitors[] | select(.focused == true) | .activeWorkspace.id) as $workspace
+        else (($monitors | map(select(.focused == true)) | .[0].activeWorkspace.id) // $monitors[0].activeWorkspace.id) as $workspace
         | (($workspace - 1) / $count | floor + 1)
         end
     ' | head -n1
@@ -76,18 +77,6 @@ reconcile_workspaces() {
     command -v hypr-workspace-manager >/dev/null || return 0
     if [[ -n "$group" ]]; then hypr-workspace-manager reconcile "$group"; else hypr-workspace-manager reconcile; fi
 }
-refresh_desktop_surfaces() {
-    # Waybar and hyprpaper are layer-shell clients.  Restart them after the
-    # compositor has committed a new monitor layout so they recreate surfaces
-    # at the new output dimensions rather than retaining stale coordinates.
-    sleep 0.5
-    pkill -x waybar || true
-    pkill -x hyprpaper || true
-    (exec 9>&-; exec hyprpaper) </dev/null >/dev/null 2>&1 &
-    (exec 9>&-; exec waybar -c "$HOME/.config/waybar/themes/default/config" -s "$HOME/.config/waybar/themes/default/style.css") \
-        </dev/null >/dev/null 2>&1 &
-}
-
 reconcile() {
     local lid="${1:-}"
     # A saved event is useful for the close/open handler itself, but it must
@@ -98,29 +87,30 @@ reconcile() {
     printf '%s\n' "$lid" > "$lid_state_file"
     laptop_present || return 0
     if [[ "$lid" == "open" ]]; then
-        # Capture the group while the old monitor count is still in effect.
-        # Once eDP-1 is enabled, the same workspace id has a different group.
+        # Preserve the docked logical group before returning the panel to it.
         local group
         group="$(current_workspace_group)"
         stop_inhibitor "$dock_inhibitor_pid"
-        monitor_enable
-        wait_for_monitor_state enabled || true
+        ensure_laptop_enabled || true
+        unpark_panel
         hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
         reconcile_workspaces "$group"
-        refresh_desktop_surfaces
     elif external_active; then
-        # Preserve the logical group before removing eDP-1; calculating it
-        # afterward would reinterpret workspace ids using the smaller count.
+        # Keep eDP-1 active in Hyprland to avoid the FALLBACK-output path, but
+        # park it from workspace grouping so docked behavior remains unchanged.
         local group
         group="$(current_workspace_group)"
-        monitor_disable
-        wait_for_monitor_state disabled || true
+        ensure_laptop_enabled || true
+        park_panel
+        hyprctl dispatch "hl.dsp.dpms({ action = \"off\", monitor = \"$laptop_monitor\" })" || true
         start_inhibitor "$dock_inhibitor_pid" sleep "keep docked session awake"
         reconcile_workspaces "$group"
-        refresh_desktop_surfaces
     else
         stop_inhibitor "$dock_inhibitor_pid"
-        monitor_enable
+        # The panel remains an active Hyprland output even while blanked.
+        # This prevents a dock disconnect from leaving only FALLBACK behind.
+        ensure_laptop_enabled || true
+        unpark_panel
         lock_and_blank_laptop
     fi
 }
@@ -139,9 +129,17 @@ main() {
             reconcile "$action"
             ;;
         reconcile) reconcile ;;
+        panel-on)
+            ensure_laptop_enabled || true
+            unpark_panel
+            hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
+            reconcile_workspaces
+            ;;
         idle-dpms) external_active || hyprctl dispatch 'hl.dsp.dpms({ action = "off" })' ;;
         idle-suspend) external_active || systemctl suspend ;;
-        resume) reconcile; hyprctl dispatch 'hl.dsp.dpms({ action = "on" })' || true ;;
+        # Wake every output first, then restore the lid policy.  Reversing
+        # these calls would immediately re-light a parked docked panel.
+        resume) hyprctl dispatch 'hl.dsp.dpms({ action = "on" })' || true; reconcile ;;
         *) usage ;;
     esac
 }
