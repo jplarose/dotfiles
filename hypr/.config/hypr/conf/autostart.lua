@@ -17,8 +17,10 @@ hl.on("hyprland.start", function()
 	-- Start swaync
 	hl.exec_cmd("swaync")
 
-	-- Start hypridle
-	hl.exec_cmd("hypridle")
+	-- Start hypridle unless this machine explicitly opts out.
+	if os.getenv("HYPRIDLE_ENABLED") ~= "0" then
+		hl.exec_cmd("hypridle")
+	end
 
 	-- Start OpenVPN Connection
 	hl.exec_cmd("nm-applet indicator")
