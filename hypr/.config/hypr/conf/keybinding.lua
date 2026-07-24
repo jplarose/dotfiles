@@ -136,7 +136,14 @@ hl.bind(
 )
 hl.bind(
 	mainMod .. " + CTRL + RETURN",
-	hl.dsp.exec_cmd("rofi -show drun -replace -i"),
+	-- Keep the launcher appearance independent of any machine-wide Rofi or
+	-- ml4w configuration.  The explicit config is intentionally kept under
+	-- Hyprland so it does not conflict with a separately managed ~/.config/rofi.
+	hl.dsp.exec_cmd(
+		"rofi -config ~/.config/hypr/rofi-launcher.rasi "
+			.. "-theme-str \"* { current-image: url(\\\"$HOME/.config/hypr/assets/Andy-Space-1.png\\\", height); }\" "
+			.. "-show drun -replace -i"
+	),
 	{ description = "Open application launcher" }
 )
 hl.bind(

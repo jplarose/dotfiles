@@ -1,0 +1,200 @@
+/*
+ * Standalone copy of this setup's original application-launcher design.
+ * Its only image is the wallpaper already versioned with this Hypr config;
+ * no ml4w config, generated cache, or ~/.config/rofi file is used.
+ */
+
+configuration {
+    modi: "drun,filebrowser,window,run";
+    font: "Fira Sans 11";
+    show-icons: true;
+    display-drun: " ";
+    display-run: " ";
+    display-filebrowser: "";
+    display-window: "";
+    drun-display-format: "{name}";
+    hover-select: false;
+    scroll-method: 1;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+    window-format: "{w} · {c} · {t}";
+    click-to-exit: true;
+    close-on-delete: true;
+    kb-cancel: "Escape,MousePrimary";
+}
+
+* {
+    background: #263141b3;
+    primary: #a5c8ff;
+    surface: #111318;
+    on-surface: #e1e2e9;
+    /* The binding replaces this with the versioned Hyprland wallpaper. */
+    current-image: linear-gradient(#263141, #263141);
+    border-width: 2px;
+    border-radius: 20px;
+}
+
+window {
+    height: 35em;
+    width: 56em;
+    transparency: "real";
+    fullscreen: false;
+    enabled: true;
+    cursor: "default";
+    spacing: 0em;
+    padding: 0em;
+    border: @border-width;
+    border-color: @primary;
+    border-radius: @border-radius;
+    background-color: @background;
+}
+
+mainbox {
+    enabled: true;
+    spacing: 0em;
+    padding: 0em;
+    orientation: horizontal;
+    children: [ "imagebox", "listbox" ];
+    background-color: transparent;
+    background-image: @current-image;
+}
+
+imagebox {
+    padding: 20px;
+    background-color: transparent;
+    orientation: vertical;
+    children: [ "inputbar", "dummy", "mode-switcher" ];
+}
+
+dummy { background-color: transparent; }
+
+mode-switcher {
+    orientation: horizontal;
+    width: 6.6em;
+    enabled: true;
+    padding: 1.5em;
+    spacing: 1.5em;
+    background-color: transparent;
+}
+
+button {
+    padding: 15px;
+    border-radius: 2em;
+    border: 0;
+    cursor: pointer;
+    background-color: @background;
+    text-color: @on-surface;
+}
+
+button selected {
+    padding: 15px;
+    border-radius: 2em;
+    background-color: @surface;
+    text-color: @on-surface;
+}
+
+inputbar {
+    enabled: true;
+    margin: 1em;
+    children: [ "textbox-prompt-colon", "entry" ];
+    border-radius: 2em;
+    background-color: @surface;
+}
+
+textbox-prompt-colon {
+    enabled: true;
+    expand: false;
+    str: "  ";
+    padding: 1em 0.3em 0 0;
+    text-color: @on-surface;
+    background-color: transparent;
+}
+
+entry {
+    enabled: true;
+    spacing: 1em;
+    padding: 1em;
+    text-color: @on-surface;
+    cursor: text;
+    placeholder: "Search";
+    background-color: transparent;
+    placeholder-color: inherit;
+}
+
+listbox {
+    padding: 0em;
+    spacing: 0em;
+    orientation: horizontal;
+    children: [ "listview" ];
+    background-color: @background;
+}
+
+listview {
+    padding: 1.5em;
+    spacing: 0.5em;
+    enabled: true;
+    columns: 1;
+    lines: 1;
+    cycle: true;
+    dynamic: true;
+    scrollbar: false;
+    layout: vertical;
+    reverse: false;
+    fixed-height: true;
+    fixed-columns: true;
+    cursor: "default";
+    background-color: transparent;
+    text-color: @on-surface;
+}
+
+element {
+    enabled: true;
+    spacing: 10px;
+    padding: 0.5em;
+    cursor: pointer;
+    background-color: transparent;
+    text-color: @on-surface;
+}
+
+element selected.normal {
+    background-color: @surface;
+    text-color: @on-surface;
+    border-radius: 1.5em;
+}
+
+element normal.normal, element normal.urgent, element normal.active,
+element selected.urgent, element selected.active,
+element alternate.normal, element alternate.urgent, element alternate.active {
+    background-color: inherit;
+    text-color: @on-surface;
+}
+
+element-icon {
+    size: 3em;
+    cursor: inherit;
+    background-color: transparent;
+    text-color: inherit;
+    border-radius: 0em;
+}
+
+element-text {
+    vertical-align: 0.5;
+    horizontal-align: 0.0;
+    cursor: inherit;
+    background-color: transparent;
+    text-color: inherit;
+}
+
+error-message {
+    text-color: @on-surface;
+    background-color: @background;
+    text-transform: capitalize;
+    children: [ "textbox" ];
+}
+
+textbox {
+    text-color: inherit;
+    background-color: inherit;
+    vertical-align: 0.5;
+    horizontal-align: 0.5;
+}
