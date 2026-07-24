@@ -19,7 +19,8 @@ capture_area() {
     region="$(slurp)" || exit 0
     [ -n "$region" ] || exit 0
     grim -g "$region" "$file"
-    notify_saved
+    wl-copy --type image/png < "$file"
+    notify-send -a "Screen Capture" "Screenshot saved and copied" "$file"
 }
 
 case "${1:-}" in
