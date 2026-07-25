@@ -8,8 +8,9 @@ hl.on("hyprland.start", function()
 	-- Start wallpaper daemon
 	hl.exec_cmd("hyprpaper")
 
-	-- Start waybar
-	hl.exec_cmd("waybar -c ~/.config/waybar/themes/default/config -s ~/.config/waybar/themes/default/style.css")
+	-- Build one Waybar config per currently visible output.  This keeps the
+	-- grouped workspace buttons portable across docks and connector names.
+	hl.exec_cmd("hypr-waybar-manager start")
 
 	-- Start polkit daemon
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")

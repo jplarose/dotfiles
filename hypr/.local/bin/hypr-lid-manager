@@ -7,10 +7,11 @@ runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
 lid_state_file="$runtime_dir/hypr-lid-state"
 lid_inhibitor_pid="$runtime_dir/hypr-lid-switch-inhibitor.pid"
 dock_inhibitor_pid="$runtime_dir/hypr-docked-sleep-inhibitor.pid"
+hotplug_watcher_pid="$runtime_dir/hypr-dock-hotplug-watcher.pid"
 parked_panel_file="$runtime_dir/hypr-lid-parked-panel"
 lock_file="$runtime_dir/hypr-lid-manager.lock"
 
-usage() { echo "Usage: $(basename "$0") {start|close|open|reconcile|panel-on|idle-dpms|idle-suspend|resume}" >&2; exit 2; }
+usage() { echo "Usage: $(basename "$0") {start|close|open|reconcile|panel-on|idle-dpms|idle-suspend|resume|status}" >&2; exit 2; }
 monitors() { hyprctl monitors all -j; }
 physical_lid_state() {
     local state
@@ -19,7 +20,17 @@ physical_lid_state() {
         if grep -q 'closed' "$state"; then printf '%s\n' closed; return; fi
         if grep -q 'open' "$state"; then printf '%s\n' open; return; fi
     done
-    printf '%s\n' open
+    printf '%s\n' unknown
+}
+stable_physical_lid_state() {
+    # A lid-switch event can be noisy (for example, from a nearby magnet).
+    # Require two matching kernel reports before allowing it to change policy.
+    local first second
+    first="$(physical_lid_state)"
+    [[ "$first" != unknown ]] || { printf '%s\n' unknown; return; }
+    sleep 0.35
+    second="$(physical_lid_state)"
+    [[ "$first" == "$second" ]] && printf '%s\n' "$first" || printf '%s\n' unknown
 }
 laptop_present() { monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name == $name)' >/dev/null; }
 external_active() { monitors | jq -e --arg name "$laptop_monitor" '.[] | select(.name != $name and .disabled != true)' >/dev/null; }
@@ -42,6 +53,47 @@ stop_inhibitor() {
     local pid_file="$1"
     if pid_running "$pid_file"; then kill "$(<"$pid_file")" || true; fi
     rm -f "$pid_file"
+}
+wait_for_external_active() {
+    # A dock's connectors are often announced before their modes are usable,
+    # particularly immediately after resume.  Give Hyprland a short window to
+    # finish link training before treating a closed lid as undocked.
+    local attempt
+    for attempt in {1..20}; do
+        external_active && return 0
+        sleep 0.1
+    done
+    return 1
+}
+topology_signature() {
+    monitors | jq -c 'map({name, disabled}) | sort_by(.name)' 2>/dev/null || true
+}
+watch_hotplug() {
+    local previous="" current
+    while :; do
+        current="$(topology_signature)"
+        if [[ -n "$current" && "$current" != "$previous" ]]; then
+            previous="$current"
+            "$0" reconcile || true
+        fi
+        sleep 2
+    done
+}
+start_hotplug_watcher() {
+    pid_running "$hotplug_watcher_pid" && return
+    # Like inhibitors, the watcher must not retain this invocation's flock.
+    (exec 9>&-; exec "$0" watch-hotplug) </dev/null >/dev/null 2>&1 &
+    printf '%s\n' "$!" > "$hotplug_watcher_pid"
+}
+status() {
+    local saved=unset
+    [[ -r "$lid_state_file" ]] && read -r saved < "$lid_state_file" || true
+    printf 'physical_lid_state=%s\n' "$(physical_lid_state)"
+    printf 'saved_lid_state=%s\n' "$saved"
+    printf 'laptop_present=%s\n' "$(laptop_present && echo yes || echo no)"
+    printf 'external_active=%s\n' "$(external_active && echo yes || echo no)"
+    printf 'panel_parked=%s\n' "$(panel_parked && echo yes || echo no)"
+    printf 'topology=%s\n' "$(topology_signature)"
 }
 monitor_enable() {
     hyprctl eval "hl.monitor({ output = \"$laptop_monitor\", mode = \"preferred\", position = \"auto\", scale = 1 })"
@@ -77,6 +129,10 @@ reconcile_workspaces() {
     command -v hypr-workspace-manager >/dev/null || return 0
     if [[ -n "$group" ]]; then hypr-workspace-manager reconcile "$group"; else hypr-workspace-manager reconcile; fi
 }
+reconcile_waybar() {
+    command -v hypr-waybar-manager >/dev/null || return 0
+    hypr-waybar-manager reconcile || true
+}
 reconcile() {
     local lid="${1:-}"
     # A saved event is useful for the close/open handler itself, but it must
@@ -84,6 +140,11 @@ reconcile() {
     # stale "open" file would otherwise leave eDP-1 enabled after docking
     # with the lid already closed.
     [[ -n "$lid" ]] || lid="$(physical_lid_state)"
+    # If the platform cannot report a physical state, retain the prior safe
+    # state.  On a fresh session prefer open: it cannot hide a usable panel.
+    if [[ "$lid" == unknown ]]; then
+        if [[ -r "$lid_state_file" ]]; then read -r lid < "$lid_state_file" || true; else lid=open; fi
+    fi
     printf '%s\n' "$lid" > "$lid_state_file"
     laptop_present || return 0
     if [[ "$lid" == "open" ]]; then
@@ -95,7 +156,8 @@ reconcile() {
         unpark_panel
         hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
         reconcile_workspaces "$group"
-    elif external_active; then
+        reconcile_waybar
+    elif external_active || wait_for_external_active; then
         # Keep eDP-1 active in Hyprland to avoid the FALLBACK-output path, but
         # park it from workspace grouping so docked behavior remains unchanged.
         local group
@@ -105,6 +167,7 @@ reconcile() {
         hyprctl dispatch "hl.dsp.dpms({ action = \"off\", monitor = \"$laptop_monitor\" })" || true
         start_inhibitor "$dock_inhibitor_pid" sleep "keep docked session awake"
         reconcile_workspaces "$group"
+        reconcile_waybar
     else
         stop_inhibitor "$dock_inhibitor_pid"
         # The panel remains an active Hyprland output even while blanked.
@@ -112,21 +175,27 @@ reconcile() {
         ensure_laptop_enabled || true
         unpark_panel
         lock_and_blank_laptop
+        reconcile_waybar
     fi
 }
 
 main() {
     [[ $# -ge 1 ]] || usage
     local action="$1"
+    if [[ "$action" == watch-hotplug ]]; then watch_hotplug; return; fi
     exec 9>"$lock_file"; flock -n 9 || exit 0
     case "$action" in
         start)
             start_inhibitor "$lid_inhibitor_pid" handle-lid-switch "Hyprland manages lid policy"
+            start_hotplug_watcher
             reconcile
             ;;
         close|open)
-            printf '%s\n' "$action" > "$lid_state_file"
-            reconcile "$action"
+            # Do not make a lock/blanking decision from the compositor event
+            # alone; its source can be a transient or false lid switch event.
+            local lid
+            lid="$(stable_physical_lid_state)"
+            [[ "$lid" == "$action" ]] && reconcile "$lid"
             ;;
         reconcile) reconcile ;;
         panel-on)
@@ -134,7 +203,9 @@ main() {
             unpark_panel
             hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
             reconcile_workspaces
+            reconcile_waybar
             ;;
+        status) status ;;
         idle-dpms) external_active || hyprctl dispatch 'hl.dsp.dpms({ action = "off" })' ;;
         idle-suspend) external_active || systemctl suspend ;;
         # Wake every output first, then restore the lid policy.  Reversing
