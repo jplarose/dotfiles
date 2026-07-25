@@ -129,10 +129,6 @@ reconcile_workspaces() {
     command -v hypr-workspace-manager >/dev/null || return 0
     if [[ -n "$group" ]]; then hypr-workspace-manager reconcile "$group"; else hypr-workspace-manager reconcile; fi
 }
-reconcile_waybar() {
-    command -v hypr-waybar-manager >/dev/null || return 0
-    hypr-waybar-manager reconcile || true
-}
 reconcile() {
     local lid="${1:-}"
     # A saved event is useful for the close/open handler itself, but it must
@@ -156,7 +152,6 @@ reconcile() {
         unpark_panel
         hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
         reconcile_workspaces "$group"
-        reconcile_waybar
     elif external_active || wait_for_external_active; then
         # Keep eDP-1 active in Hyprland to avoid the FALLBACK-output path, but
         # park it from workspace grouping so docked behavior remains unchanged.
@@ -167,7 +162,6 @@ reconcile() {
         hyprctl dispatch "hl.dsp.dpms({ action = \"off\", monitor = \"$laptop_monitor\" })" || true
         start_inhibitor "$dock_inhibitor_pid" sleep "keep docked session awake"
         reconcile_workspaces "$group"
-        reconcile_waybar
     else
         stop_inhibitor "$dock_inhibitor_pid"
         # The panel remains an active Hyprland output even while blanked.
@@ -175,7 +169,6 @@ reconcile() {
         ensure_laptop_enabled || true
         unpark_panel
         lock_and_blank_laptop
-        reconcile_waybar
     fi
 }
 
@@ -203,7 +196,6 @@ main() {
             unpark_panel
             hyprctl dispatch "hl.dsp.dpms({ action = \"on\", monitor = \"$laptop_monitor\" })" || true
             reconcile_workspaces
-            reconcile_waybar
             ;;
         status) status ;;
         idle-dpms) external_active || hyprctl dispatch 'hl.dsp.dpms({ action = "off" })' ;;
