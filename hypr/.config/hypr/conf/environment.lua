@@ -11,6 +11,9 @@ hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
 hl.env("SDL_VIDEODRIVER", "wayland")
 
+-- Per-machine custom.lua may override HYPR_WORKSPACE_MODE (grouped or focused)
+-- and HYPR_LAPTOP_MONITOR before the first workspace or lid action.
+
 -- Session identity for portals and desktop applications.
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_TYPE", "wayland")

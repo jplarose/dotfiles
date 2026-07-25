@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
+state_file="$runtime_dir/hypr-workspace-mode"
+parked_panel_file="$runtime_dir/hypr-lid-parked-panel"
+laptop_monitor="${HYPR_LAPTOP_MONITOR:-eDP-1}"
+lock_file="$runtime_dir/hypr-workspace-manager.lock"
+
+usage() {
+    echo "Usage: $(basename "$0") {focus|move|cycle|move-cycle|reconcile|toggle-mode} [workspace|next|previous]" >&2
+    exit 2
+}
+
+notify() {
+    command -v notify-send >/dev/null && notify-send "Hyprland workspaces" "$1" || true
+}
+
+mode() {
+    local selected
+    selected="${HYPR_WORKSPACE_MODE:-grouped}"
+    [[ "$selected" == "grouped" || "$selected" == "focused" ]] || selected="grouped"
+    if [[ -r "$state_file" ]]; then
+        read -r selected < "$state_file" || true
+    fi
+    [[ "$selected" == "grouped" || "$selected" == "focused" ]] || selected="grouped"
+    printf '%s\n' "$selected"
+}
+
+toggle_mode() {
+    local selected
+    selected="$(mode)"
+    if [[ "$selected" == "grouped" ]]; then selected="focused"; else selected="grouped"; fi
+    printf '%s\n' "$selected" > "$state_file"
+    notify "Workspace mode: $selected"
+}
+
+monitors_json() { hyprctl monitors -j; }
+panel_parked() { [[ -r "$parked_panel_file" ]] && [[ "$(<"$parked_panel_file")" == "$laptop_monitor" ]]; }
+
+visible_monitors_json() {
+    local excluded=""
+    panel_parked && excluded="$laptop_monitor"
+    monitors_json | jq --arg excluded "$excluded" 'map(select(.disabled != true and ($excluded == "" or .name != $excluded)))'
+}
+
+enabled_monitors() {
+    visible_monitors_json | jq -r '
+      sort_by(.x, .y, .name)
+      | .[].name
+    '
+}
+
+focused_monitor() {
+    visible_monitors_json | jq -r '([ .[] | select(.focused == true) ][0].name) // .[0].name // empty'
+}
+workspace_on_monitor() {
+    local monitor="$1"
+    visible_monitors_json | jq -r --arg monitor "$monitor" '.[] | select(.name == $monitor) | .activeWorkspace.id' | head -n1
+}
+
+focus_workspace() { hyprctl dispatch "hl.dsp.focus({ workspace = \"$1\", on_current_monitor = true })"; }
+move_window() { hyprctl dispatch "hl.dsp.window.move({ workspace = \"$1\" })"; }
+focus_monitor() { hyprctl dispatch "hl.dsp.focus({ monitor = \"$1\" })"; }
+move_workspace_to_monitor() { hyprctl dispatch "hl.dsp.workspace.move({ workspace = \"$1\", monitor = \"$2\" })"; }
+
+logical_group_for_workspace() {
+    local workspace="$1" count="$2"
+    printf '%s\n' "$(((workspace - 1) / count + 1))"
+}
+
+open_groups() {
+    local count="$1"
+    hyprctl workspaces -j | jq -r --argjson count "$count" '
+      [ .[] | select(.id > 0) | ((.id - 1) / $count | floor + 1) ] | unique | .[]
+    '
+}
+
+cycle_group() {
+    local direction="$1" count="$2" current_workspace groups target index=0 focused
+    focused="$(focused_monitor)"
+    current_workspace="$(workspace_on_monitor "$focused")"
+    mapfile -t groups < <(open_groups "$count")
+    ((${#groups[@]})) || return 0
+    local current_group
+    current_group="$(logical_group_for_workspace "$current_workspace" "$count")"
+    for i in "${!groups[@]}"; do [[ "${groups[$i]}" == "$current_group" ]] && index="$i"; done
+    if [[ "$direction" == "next" ]]; then
+        index=$(((index + 1) % ${#groups[@]}))
+    else
+        index=$(((index - 1 + ${#groups[@]}) % ${#groups[@]}))
+    fi
+    printf '%s\n' "${groups[$index]}"
+}
+
+reconcile_workspace_ownership() {
+    local count="$1"
+    shift
+    local -a monitors=("$@")
+    local workspace current_monitor slot destination
+
+    # Hyprland assigns every workspace to one output, including inactive
+    # workspaces.  Keep that ownership aligned with the current logical-group
+    # slots so Waybar can render inactive, app-bearing workspaces on the
+    # correct output without maintaining its own topology state.
+    while IFS=$'\t' read -r workspace current_monitor; do
+        slot=$(((workspace - 1) % count))
+        destination="${monitors[$slot]}"
+        [[ "$current_monitor" == "$destination" ]] || move_workspace_to_monitor "$workspace" "$destination"
+    done < <(hyprctl workspaces -j | jq -r '.[] | select(.id > 0) | [.id, .monitor] | @tsv' | sort -n)
+}
+
+main() {
+    [[ $# -ge 1 ]] || usage
+    local action="$1" argument="${2:-}"
+    exec 9>"$lock_file"
+    flock -n 9 || exit 0
+
+    if [[ "$action" == "toggle-mode" ]]; then toggle_mode; return; fi
+    [[ "$action" == "focus" || "$action" == "move" || "$action" == "cycle" || "$action" == "move-cycle" || "$action" == "reconcile" ]] || usage
+
+    mapfile -t monitors < <(enabled_monitors)
+    ((${#monitors[@]})) || { notify "No enabled monitors"; exit 1; }
+    local count="${#monitors[@]}" focused selected_mode target group slot destination
+    focused="$(focused_monitor)"
+    [[ -n "$focused" ]] || { notify "No focused monitor"; exit 1; }
+    selected_mode="$(mode)"
+
+    # Focused mode intentionally keeps native per-workspace ownership.  In
+    # grouped mode, ownership is topology-relative and must be corrected for
+    # every existing workspace, not only the currently visible group.
+    [[ "$action" != "reconcile" || "$selected_mode" == "grouped" ]] || return 0
+    if [[ "$selected_mode" == "grouped" ]]; then
+        reconcile_workspace_ownership "$count" "${monitors[@]}"
+    fi
+    if [[ "$action" == "reconcile" ]]; then
+        if [[ -n "$argument" ]]; then
+            [[ "$argument" =~ ^[1-9][0-9]*$ ]] || usage
+            group="$argument"
+        else
+            target="$(workspace_on_monitor "$focused")"
+            group="$(logical_group_for_workspace "$target" "$count")"
+        fi
+    fi
+
+    if [[ "$action" == "cycle" || "$action" == "move-cycle" ]]; then
+        [[ "$argument" == "next" || "$argument" == "previous" ]] || usage
+        if [[ "$selected_mode" == "grouped" && "$count" -gt 1 ]]; then
+            group="$(cycle_group "$argument" "$count")" || return 0
+        else
+            target="e$([[ "$argument" == next ]] && printf '+1' || printf '-1')"
+            [[ "$action" == "cycle" ]] && focus_workspace "$target" || move_window "$target"
+            return
+        fi
+    elif [[ "$action" != "reconcile" ]]; then
+        [[ "$argument" =~ ^[1-9]$ ]] || usage
+        group="$argument"
+        if [[ "$selected_mode" == "focused" || "$count" -eq 1 ]]; then
+            [[ "$action" == "focus" ]] && focus_workspace "$group" || move_window "$group"
+            return
+        fi
+    fi
+
+    for slot in "${!monitors[@]}"; do
+        if [[ "${monitors[$slot]}" == "$focused" ]]; then
+            destination=$(( (group - 1) * count + slot + 1 ))
+            if [[ "$action" == "move" || "$action" == "move-cycle" ]]; then
+                move_window "$destination"
+                return
+            fi
+        fi
+    done
+
+    for slot in "${!monitors[@]}"; do
+        destination=$(( (group - 1) * count + slot + 1 ))
+        focus_monitor "${monitors[$slot]}"
+        focus_workspace "$destination"
+    done
+    focus_monitor "$focused"
+}
+
+main "$@"

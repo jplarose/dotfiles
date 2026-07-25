@@ -4,21 +4,36 @@ local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 -- Applications
 hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd("kitty"), { description = "Open the terminal" })
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("firefox"), { description = "Open the browser" })
-hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("chrome"), { description = "Open the secondary browser" })
+hl.bind(
+	mainMod .. " + SHIFT + B",
+	hl.dsp.exec_cmd("google-chrome-stable"),
+	{ description = "Open the secondary browser" }
+)
 hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc"), { description = "Open calculator" })
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("slack"), { description = "Open Slack" })
+hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zoom"), { description = "Open Zoom" })
 
--- Move active window to a workspace with mainMod + SHIFT + [0-9]
-for i = 1, 10 do
-	local key = i % 10 -- 10 maps to key 0
-	hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }), { description = "Focus workspace " .. i })
+-- A logical workspace is one workspace per visible monitor.  The workspace
+-- manager parks a DPMS-blanked laptop panel while docked, preserving the
+-- existing external-monitor grouping without disabling the physical output.
+for i = 1, 9 do
 	hl.bind(
-		mainMod .. " + SHIFT + " .. key,
+		mainMod .. " + " .. i,
+		hl.dsp.exec_cmd("hypr-workspace-manager focus " .. i),
+		{ description = "Focus logical workspace " .. i }
+	)
+
+	hl.bind(
+		mainMod .. " + SHIFT + " .. i,
 		hl.dsp.window.move({ workspace = i }),
 		{ description = "Move window to workspace " .. i }
 	)
 end
-
+hl.bind(
+	mainMod .. " + CTRL + W",
+	hl.dsp.exec_cmd("hypr-workspace-manager toggle-mode"),
+	{ description = "Toggle workspace mode" }
+)
 -- Windows
 hl.bind(mainMod .. " + Q", hl.dsp.window.close(), { description = "Close active window" })
 hl.bind(
@@ -90,6 +105,11 @@ hl.bind(mainMod .. " + ALT + down", hl.dsp.window.swap({ direction = "d" }), { d
 -- Actions
 hl.bind(mainMod .. " + CTRL + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "Reload Hyprland configuration" })
 hl.bind(
+	mainMod .. " + CTRL + P",
+	hl.dsp.exec_cmd("hypr-lid-manager panel-on"),
+	{ locked = true, description = "Emergency: restore laptop panel" }
+)
+hl.bind(
 	mainMod .. " + SHIFT + E",
 	hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"),
 	{ description = "Exit Hyprland session" }
@@ -116,7 +136,14 @@ hl.bind(
 )
 hl.bind(
 	mainMod .. " + CTRL + RETURN",
-	hl.dsp.exec_cmd("rofi -show drun -replace -i"),
+	-- Keep the launcher appearance independent of any machine-wide Rofi or
+	-- ml4w configuration.  The explicit config is intentionally kept under
+	-- Hyprland so it does not conflict with a separately managed ~/.config/rofi.
+	hl.dsp.exec_cmd(
+		"rofi -config ~/.config/hypr/rofi-launcher.rasi "
+			.. "-theme-str \"* { current-image: url(\\\"$HOME/.config/hypr/assets/Andy-Space-1.png\\\", height); }\" "
+			.. "-show drun -replace -i"
+	),
 	{ description = "Open application launcher" }
 )
 hl.bind(
@@ -131,9 +158,27 @@ hl.bind(
 )
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"), { description = "Lock screen" })
 
--- Scroll through existing workspaces with mainMod + scroll
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), { description = "Switch to next workspace" })
-hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), { description = "Switch to previous workspace" })
+-- Scroll through open logical workspace groups with mainMod + scroll.
+hl.bind(
+	mainMod .. " + mouse_down",
+	hl.dsp.exec_cmd("hypr-workspace-manager cycle next"),
+	{ description = "Switch to next open workspace group" }
+)
+hl.bind(
+	mainMod .. " + mouse_up",
+	hl.dsp.exec_cmd("hypr-workspace-manager cycle previous"),
+	{ description = "Switch to previous open workspace group" }
+)
+hl.bind(
+	mainMod .. " + SHIFT + mouse_down",
+	hl.dsp.exec_cmd("hypr-workspace-manager move-cycle next"),
+	{ description = "Move window to next open workspace group" }
+)
+hl.bind(
+	mainMod .. " + SHIFT + mouse_up",
+	hl.dsp.exec_cmd("hypr-workspace-manager move-cycle previous"),
+	{ description = "Move window to previous open workspace group" }
+)
 
 -- Multimedia and brightness keys
 hl.bind(

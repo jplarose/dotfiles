@@ -8,7 +8,7 @@ set -euo pipefail
 #  packages such as stow, nvim, zellij, oh-my-posh, beets, yt-dlp, and cbonsai.
 #
 #  This script only handles:
-#    - GNU Stow symlinks for each dotfile package
+#    - GNU Stow symlinks for every managed dotfile package
 #    - Backing up any pre-existing files that would conflict
 #    - Ensuring ~/.local/bin is on PATH via ~/.bashrc
 #
@@ -81,8 +81,10 @@ target_passes_through_symlink() {
     return 1
 }
 
-# Walks the stow package directory and moves any existing
-# (non-symlink) files in $HOME to a timestamped backup dir.
+# Walks the stow package directory and moves any existing real files in $HOME
+# to a timestamped backup dir. Existing symlinks are left alone: stow will
+# accept symlinks it already owns and will clearly report an unknown symlink
+# as a conflict instead of silently replacing it.
 backup_stow_conflicts() {
     local pkg="$1"
     local pkg_dir="$DOTFILES_DIR/$pkg"
@@ -95,7 +97,7 @@ backup_stow_conflicts() {
         # Skip when $target or any ancestor is a symlink — those are either
         # already stow-managed or resolve back into the repo, and `mv` on a
         # path under a symlinked parent would yank files out of the repo.
-        if [[ -e "$target" ]] && ! target_passes_through_symlink "$target"; then
+        if [[ -e "$target" && ! -L "$target" ]] && ! target_passes_through_symlink "$target"; then
             if ! $has_conflicts; then
                 mkdir -p "$backup_dir"
                 has_conflicts=true
@@ -133,12 +135,26 @@ stow_package() {
     fi
 }
 
-# ── Package discovery ────────────────────────────────────
-# A stow package is a top-level dir containing at least one dotfile or
-# dotdir as a direct child (.bashrc, .config/, .claude/, etc.). Non-dotted
-# siblings like README.md are allowed because stow's defaults ignore them.
-# This matches .githooks/post-merge, so adding a new package only requires
-# adding the directory.
+# ── Managed packages ─────────────────────────────────────
+# Keep this list explicit. It makes a fresh install deterministic and prevents
+# unrelated top-level directories (such as backups or repository metadata)
+# from ever being treated as stow packages. Add a package here when adding a
+# new directory that should be linked into $HOME.
+STOW_PACKAGES=(
+    bashrc
+    beets
+    claude
+    codex
+    hypr
+    kitty
+    nvim
+    oh-my-posh
+    waybar
+    zellij
+)
+
+# Verify a package has a dotfile or dotdir as a direct child. Non-dotted
+# siblings such as README.md are automatically ignored by stow.
 is_package_dir() {
     local dir="$1"
     [[ -d "$dir" ]] || return 1
@@ -149,24 +165,14 @@ is_package_dir() {
     return 1
 }
 
-discover_packages() {
-    local dir name
-    for dir in "$DOTFILES_DIR"/*/; do
-        [[ -d "$dir" ]] || continue
-        name="$(basename "$dir")"
-        is_package_dir "$dir" && printf '%s\n' "$name"
-    done | sort
-}
-
-# ── Component installer ──────────────────────────────────
 # Renders <pkg>/README.md if present (auto-ignored by stow's defaults), then
 # prompts the user to install. First non-empty README line is used as the
 # section title; remaining lines become info() lines under the header.
 install_package() {
     local pkg="$1"
 
-    # Apply a previously-recorded decision without re-prompting. This is the
-    # frictionless path: only ask the user about packages they haven't seen.
+    # Apply a previously-recorded decision without re-prompting. This keeps
+    # optional packages (for example, Beets on a work machine) un-stowed.
     local decision; decision="$(decisions_get "$pkg")"
     case "$decision" in
         y)
@@ -260,9 +266,8 @@ main() {
     echo "┌─────────────────────────────────────────┐"
     echo "│       Dotfiles Installer (Stow)          │"
     echo "│                                          │"
-    echo "│  Discovers top-level stow packages       │"
-    echo "│  such as bashrc, beets, claude, codex,   │"
-    echo "│  nvim, oh-my-posh, and zellij.           │"
+    echo "│  Offers every managed package, including │"
+    echo "│  Hyprland, Kitty, and Waybar configs.    │"
     echo "│                                          │"
     echo "│  Prerequisite:                           │"
     echo "│    ./install.sh               │"
@@ -275,31 +280,29 @@ main() {
 
     if ! command_exists stow; then
         error "GNU Stow is not installed."
-        error "Run ./install-tools-arch.sh first; it installs stow along with the other tools."
+        error "Run ./install.sh first; it installs stow along with the other tools."
         exit 1
     fi
 
-    local -a pkgs=()
-    local _line
-    while IFS= read -r _line; do
-        pkgs+=("$_line")
-    done < <(discover_packages)
-    if [[ ${#pkgs[@]} -eq 0 ]]; then
-        warn "No stow packages found in $DOTFILES_DIR."
-        warn "A stow package is a top-level directory whose children all start with '.'."
-        exit 1
-    fi
+    local -a pkgs=("${STOW_PACKAGES[@]}")
 
-    info "Discovered packages: ${pkgs[*]}"
+    local pkg
+    for pkg in "${pkgs[@]}"; do
+        if ! is_package_dir "$DOTFILES_DIR/$pkg"; then
+            error "Managed package is missing or invalid: $pkg"
+            exit 1
+        fi
+    done
 
-    # Tracking arrays populated by install_package. Globals (no `local`) so the
-    # function can append to them.
+    info "Managed packages: ${pkgs[*]}"
+
+    # Tracking arrays populated by install_package. Globals (no `local`) so
+    # the function can append to them.
     APPLIED_YES=()    # decision file said yes — re-stowed silently
     APPLIED_NO=()     # decision file said no — skipped silently
     PROMPTED_YES=()   # asked the user — they said yes
     PROMPTED_NO=()    # asked the user — they said no
 
-    local pkg
     for pkg in "${pkgs[@]}"; do
         install_package "$pkg"
     done
