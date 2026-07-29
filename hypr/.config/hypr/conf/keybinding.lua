@@ -12,6 +12,19 @@ hl.bind(
 hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc"), { description = "Open calculator" })
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("slack"), { description = "Open Slack" })
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zoom"), { description = "Open Zoom" })
+hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("obsidian"), { description = "Open Obsidian" })
+
+-- Display management
+hl.bind(
+	mainMod .. " + SHIFT + P",
+	hl.dsp.exec_cmd("hypr-lid-management reconcile"),
+	{ description = "Review current monitor states and configure workspaces accordingly." }
+)
+hl.bind(
+	mainMod .. " + CTRL + P",
+	hl.dsp.exec_cmd("hypr-lid-manager panel-on"),
+	{ locked = true, description = "Emergency: restore laptop panel" }
+)
 
 -- A logical workspace is one workspace per visible monitor.  The workspace
 -- manager parks a DPMS-blanked laptop panel while docked, preserving the
@@ -104,11 +117,7 @@ hl.bind(mainMod .. " + ALT + down", hl.dsp.window.swap({ direction = "d" }), { d
 
 -- Actions
 hl.bind(mainMod .. " + CTRL + R", hl.dsp.exec_cmd("hyprctl reload"), { description = "Reload Hyprland configuration" })
-hl.bind(
-	mainMod .. " + CTRL + P",
-	hl.dsp.exec_cmd("hypr-lid-manager panel-on"),
-	{ locked = true, description = "Emergency: restore laptop panel" }
-)
+
 hl.bind(
 	mainMod .. " + SHIFT + E",
 	hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'"),
@@ -141,7 +150,7 @@ hl.bind(
 	-- Hyprland so it does not conflict with a separately managed ~/.config/rofi.
 	hl.dsp.exec_cmd(
 		"rofi -config ~/.config/hypr/rofi-launcher.rasi "
-			.. "-theme-str \"* { current-image: url(\\\"$HOME/.config/hypr/assets/Andy-Space-1.png\\\", height); }\" "
+			.. '-theme-str "* { current-image: url(\\"$HOME/.config/hypr/assets/Andy-Space-1.png\\", height); }" '
 			.. "-show drun -replace -i"
 	),
 	{ description = "Open application launcher" }
