@@ -1,3 +1,12 @@
+-- Local Functions
+
+local function definition_in_vsplit()
+  vim.cmd 'vsplit'
+  vim.lsp.buf.definition()
+end
+
+-- Keymaps
+
 local wk = require 'which-key'
 
 local global_mappings = {
@@ -21,12 +30,12 @@ local global_mappings = {
 wk.add(global_mappings)
 
 local lsp_mappings = {
-  { 'gd', vim.lsp.buf.definition, desc = 'Go to definition' },
+  { 'gd', definition_in_vsplit, desc = 'Go to definition' },
   { 'gr', vim.lsp.buf.references, desc = 'Go to Reference' },
   { 'gi', vim.lsp.buf.implementation, desc = 'Go to Implementation' },
   { 'gb', '<C-o>', desc = 'Go back through page history' },
-  { '<leader>gh', vim.lsp.buf.hover, desc = 'Show hover information' },
-  { '<leader>rn', vim.lsp.buf.rename, desc = 'Rename' },
+  { 'gh', vim.lsp.buf.hover, desc = 'Show hover information' },
+  { 'gn', vim.lsp.buf.rename, desc = 'Rename' },
 }
 
 wk.add(lsp_mappings)
@@ -38,6 +47,13 @@ local livePreview_mappings = {
 }
 
 wk.add(livePreview_mappings)
+
+local splitMappings = {
+  { '<leader>v', '<cmd>vsplit<CR>', desc = 'Vertical Split' },
+  { '<leader>s', '<cmd>split<CR>', desc = 'Horizontal Split' },
+}
+
+wk.add(splitMappings)
 
 wk.add({
   { 'J', ":m '>+1<CR>gv=gv", desc = 'Move selection down' },
