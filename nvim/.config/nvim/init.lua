@@ -508,6 +508,31 @@ require('lazy').setup({
         marksman = {},
         gopls = {},
         pyright = {
+          root_markers = {
+            '.venv',
+            'pyrightconfig.json',
+            'pyproject.toml',
+            'setup.py',
+            'setup.cfg',
+            'requirements.txt',
+            'Pipfile',
+            '.git',
+          },
+          on_init = function(client)
+            local venv_python = vim.fs.joinpath(client.root_dir, '.venv', 'bin', 'python')
+
+            if vim.uv.fs_stat(venv_python) then
+              client.settings = vim.tbl_deep_extend('force', client.settings, {
+                python = {
+                  pythonPath = venv_python,
+                  venvPath = client.root_dir,
+                  venv = '.venv',
+                },
+              })
+              client.config.settings = client.settings
+              client:notify('workspace/didChangeConfiguration', { settings = client.settings })
+            end
+          end,
           settings = {
             python = {
               analysis = {
