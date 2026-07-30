@@ -12,6 +12,11 @@ hl.bind(
 hl.bind(mainMod .. " + CTRL + C", hl.dsp.exec_cmd("kitty --class calculator qalc"), { description = "Open calculator" })
 hl.bind(mainMod .. " + S", hl.dsp.exec_cmd("slack"), { description = "Open Slack" })
 hl.bind(mainMod .. " + Z", hl.dsp.exec_cmd("zoom"), { description = "Open Zoom" })
+hl.bind(
+	mainMod .. " + SHIFT + Z",
+	hl.dsp.exec_cmd("~/.config/hypr/scripts/zoom-reset"),
+	{ description = "Fully reset Zoom and it's pipewire streams." }
+)
 hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("obsidian"), { description = "Open Obsidian" })
 
 -- Display management

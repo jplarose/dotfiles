@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Reset Zoom's stale screencast state, then launch a fresh Zoom process.
+set -euo pipefail
+
+# Zoom needs to be completely gone before its portal session is reset.
+if pgrep -x zoom >/dev/null; then
+    pkill -TERM -x zoom
+
+    for _ in {1..30}; do
+        pgrep -x zoom >/dev/null || break
+        sleep 0.1
+    done
+
+    # Do not let an unresponsive Zoom instance keep the portal state pinned.
+    if pgrep -x zoom >/dev/null; then
+        pkill -KILL -x zoom
+        sleep 0.2
+    fi
+fi
+
+systemctl --user restart \
+    xdg-desktop-portal-hyprland.service \
+    xdg-desktop-portal.service
+
+# Give D-Bus activation a moment to publish the restarted portal services.
+sleep 0.5
+
+# Detach from Hyprland's hotkey command so Zoom stays alive after this exits.
+setsid zoom "$@" </dev/null >/dev/null 2>&1 &
