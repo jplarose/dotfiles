@@ -38,6 +38,19 @@ yta() {
     return 1
   fi
 
+  local split_chapters=false
+  local args=()
+  for arg in "$@"; do
+    case "$arg" in
+      -c|--chapters)
+        split_chapters=true
+        ;;
+      *)
+        args+=("$arg")
+        ;;
+    esac
+  done
+  
   local staging_parent="$BEETS_DIR/_staging"
   local staging_base="$staging_parent/ytplxflac"
   local run_dir
@@ -47,20 +60,37 @@ yta() {
   mkdir -p "$staging_parent" "$HOME/.config/yt-dlp" || return 1
   run_dir="$(mktemp -d "$staging_base.XXXXXXXX")" || return 1
 
-  yt-dlp \
-    -f "bestaudio[acodec=opus]/bestaudio/best" \
-    -x --audio-format flac --audio-quality 0 \
-    --embed-metadata \
-    --embed-thumbnail \
-    --ignore-errors \
-    --no-abort-on-error \
-    --download-archive "$HOME/.config/yt-dlp/plex-audio-archive.txt" \
-    --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s" \
-    --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s" \
-    --parse-metadata "%(playlist_title|Singles)s:%(meta_album)s" \
-    --parse-metadata "%(playlist_index|0)s:%(meta_track)s" \
-    -o "$run_dir/%(uploader|Unknown Artist)s/%(playlist_title|Singles)s/%(playlist_index|0)02d - %(title)s.%(ext)s" \
-    "$@"
+  local ytdlp_opts=(
+    -f "bestaudio[acodec=opus]/bestaudio/best"
+    -x --audio-format flac --audio-quality 0
+    --embed-metadata
+    --embed-thumbnail
+    --ignore-errors
+    --no-abort-on-error
+    --download-archive "$HOME/.config/yt-dlp/plex-audio-archive.txt"
+  )
+
+  if [ "$split_chapters" = true ]; then
+    ytdlp_opts+=(
+      --split-chapters
+      --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s"
+      --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s"
+      --parse-metadata "%(title)s:%(meta_album)s"
+      --parse-metadata "%(section_number)s:%(meta_track)s"
+      -o "chapter:$run_dir/%(uploader|Unknown Artist)s/%(title)s/%(section_number)02d - %(section_title)s.%(ext)s"
+    )
+  else
+    ytdlp_opts+=(
+      --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s"
+      --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s"
+      --parse-metadata "%(playlist_title|Singles)s:%(meta_album)s"
+      --parse-metadata "%(playlist_index|0)s:%(meta_track)s"
+      -o "$run_dir/%(uploader|Unknown Artist)s/%(playlist_title|Singles)s/%(playlist_index|0)02d - %(title)s.%(ext)s"
+    )
+  fi
+
+  yt-dlp "${ytdlp_opts[@]}" "${args[@]}"
+
   ytdlp_status=$?
 
   if ! find "$run_dir" -type f | grep -q .; then
