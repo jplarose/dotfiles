@@ -3,15 +3,23 @@
 -- name: "Default"
 -------------------------------------------------------
 
--- Keep this layout explicit.  `auto` assigns outputs in connector-discovery
--- order, which is not stable across a dock or Hyprland restart.  The laptop
--- panel remains at the origin; the two dock displays are physically arranged
--- DP-12 (left) then DP-16 (right).
+-- Keep the laptop panel at the origin.  Dock connector names are local to a
+-- machine, so the external layout is selected from a hostname-specific
+-- profile below rather than being shared globally.
 hl.monitor({ output = "eDP-1", mode = "preferred", position = "0x0", scale = 1 })
-hl.monitor({ output = "DP-12", mode = "preferred", position = "2256x0", scale = 1 })
-hl.monitor({ output = "DP-16", mode = "preferred", position = "4816x0", scale = 1 })
 
--- Fallback for an unfamiliar output when away from the dock.
+local hostname_file = io.open("/etc/hostname", "r")
+local hostname = hostname_file and hostname_file:read("*l") or ""
+if hostname_file then hostname_file:close() end
+
+local profiles = {
+	framework13 = "framework13",
+	specterops = "specterops",
+}
+local profile = profiles[hostname]
+if profile then require("conf.monitors." .. profile) end
+
+-- Fallback for an unfamiliar output or host without a profile.
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
 
 hl.bind(
@@ -26,4 +34,10 @@ hl.bind(
 	{ locked = true, description = "Handle laptop lid opening" }
 )
 
-hl.on("monitor.layout_changed", function() hl.exec_cmd("hypr-lid-manager reconcile") end)
+hl.on("monitor.layout_changed", function()
+	-- Reconcile workspace slots independently of lid handling.  A desktop
+	-- machine has no eDP-1, so hypr-lid-manager correctly exits early there;
+	-- workspace ownership still needs to follow the monitors' x positions.
+	hl.exec_cmd("hypr-workspace-manager reconcile")
+	hl.exec_cmd("hypr-lid-manager reconcile")
+end)
