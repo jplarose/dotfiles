@@ -117,7 +117,8 @@ yta() {
         ffmpeg -y -loglevel error \
           -i "$flac" -i "$cover" \
           -map 0:a -map 1:v \
-          -c copy \
+          -map_chapters -1 \
+          -c:a flac -c:v copy \
           -metadata artist="$artist" \
           -metadata album_artist="$artist" \
           -metadata album="$album" \
