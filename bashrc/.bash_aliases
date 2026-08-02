@@ -63,8 +63,6 @@ yta() {
   local ytdlp_opts=(
     -f "bestaudio[acodec=opus]/bestaudio/best"
     -x --audio-format flac --audio-quality 0
-    --embed-metadata
-    --embed-thumbnail
     --ignore-errors
     --no-abort-on-error
     --download-archive "$HOME/.config/yt-dlp/plex-audio-archive.txt"
@@ -73,14 +71,14 @@ yta() {
   if [ "$split_chapters" = true ]; then
     ytdlp_opts+=(
       --split-chapters
-      --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s"
-      --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s"
-      --parse-metadata "%(title)s:%(meta_album)s"
-      --parse-metadata "%(section_number)s:%(meta_track)s"
+      --write-thumbnail --convert-thumbnails jpg
       -o "chapter:$run_dir/%(uploader|Unknown Artist)s/%(title)s/%(section_number)02d - %(section_title)s.%(ext)s"
+      -o "thumbnail:$run_dir/%(uploader|Unknown Artist)s/%(title)s/cover.%(ext)s"
     )
   else
     ytdlp_opts+=(
+      --embed-metadata
+      --embed-thumbnail 
       --parse-metadata "%(uploader|Unknown Artist)s:%(meta_artist)s"
       --parse-metadata "%(uploader|Unknown Artist)s:%(meta_album_artist)s"
       --parse-metadata "%(playlist_title|Singles)s:%(meta_album)s"
@@ -102,6 +100,35 @@ yta() {
   if [ "$ytdlp_status" -ne 0 ]; then
     echo "yt-dlp reported some errors, but downloaded files were kept; continuing to beets" >&2
   fi
+
+  # Manually embed metadata/art into split-chapter files, since yt-dlp's
+  # built-in --embed-metadata/--embed-thumbnail unreliably rename or corrupt
+  # files when combined with --split-chapters.
+  if [ "$split_chapters" = true ]; then
+    local album_dir artist album cover track title flac tmp
+    while IFS= read -r -d '' cover; do
+      album_dir="$(dirname "$cover")"
+      artist="$(basename "$(dirname "$album_dir")")"
+      album="$(basename "$album_dir")"
+      while IFS= read -r -d '' flac; do
+        track="$(basename "$flac" .flac | cut -d' ' -f1)"
+        title="$(basename "$flac" .flac | cut -d' ' -f3-)"
+        tmp="${flac}.tagging.flac"
+        ffmpeg -y -loglevel error \
+          -i "$flac" -i "$cover" \
+          -map 0:a -map 1:v \
+          -c copy \
+          -metadata artist="$artist" \
+          -metadata album_artist="$artist" \
+          -metadata album="$album" \
+          -metadata track="$track" \
+          -metadata title="$title" \
+          -disposition:v attached_pic \
+          "$tmp" && mv "$tmp" "$flac"
+      done < <(find "$album_dir" -maxdepth 1 -name '*.flac' -print0)
+    done < <(find "$run_dir" -name 'cover.jpg' -print0)
+  fi
+
 
   command beet --directory "$BEETS_DIR" import "$run_dir"
   beet_status=$?
