@@ -48,6 +48,10 @@ export PATH="$HOME/.local/bin:$PATH"
 
 eval "$(oh-my-posh init bash --config ~/.config/omp/takuya.omp.json)"
 
+# Stop weird background highlighting when SSH'd into Windows machines
+eval "$(dircolors -b)"
+export LS_COLORS="${LS_COLORS}:ow=34:tw=34:st=34"
+
 if [ -f ~/.git-completion.bash ]; then
   . ~/.git-completion.bash
 fi
