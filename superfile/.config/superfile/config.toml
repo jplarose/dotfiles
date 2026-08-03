@@ -15,6 +15,9 @@
 # Default: $EDITOR
 editor = ""
 
+# Trying dotfile toggling
+toggle_dot_file = true
+
 #-- Directory Editor
 # 
 dir_editor = ""
