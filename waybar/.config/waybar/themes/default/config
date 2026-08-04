@@ -3,11 +3,11 @@
     // "position": "bottom", // Waybar position (top|bottom|left|right)
     "height": 36, // Waybar height (to be removed for auto height)
     // "width": 1280, // Waybar width
-    "spacing": 4, // Gaps between modules (4px)
+    "spacing": 2, // Gaps between modules (4px)
     // Choose the order of the modules
     "modules-left": ["hyprland/workspaces"],
     "modules-center": ["hyprland/window"],
-    "modules-right": ["idle_inhibitor", "pulseaudio", "network", "cpu", "memory", "temperature", "battery", "keyboard-state", "clock", "tray"],
+    "modules-right": ["pulseaudio", "network", "cpu", "memory", "temperature", "battery", "keyboard-state", "clock", "tray"],
     // Modules configuration
     "hyprland/workspaces": {
         // Show the workspace number plus every application it contains. This
@@ -42,13 +42,6 @@
             "unlocked": ""
         }
     },
-    "idle_inhibitor": {
-        "format": "{icon}",
-        "format-icons": {
-            "activated": "",
-            "deactivated": ""
-        }
-    },
     "tray": {
         "spacing": 10
     },
@@ -59,7 +52,7 @@
         "format-alt": "{:%Y-%m-%d}"
     },
     "cpu": {
-        "format": "CPU {usage}% ",
+        "format": "{usage}% ",
         "tooltip": false
     },
     "memory": {
@@ -68,13 +61,13 @@
     "temperature": {
         "critical-threshold": 80,
         // "format-critical": "{temperatureC}°C {icon}",
-        "format": "TEMP {temperatureC}°C {icon}",
+        "format": "{temperatureC}°C {icon}",
         "format-icons": ["", "", ""]
     },
     "network": {
         // "interface": "wlp2*", // (Optional) To force the use of this interface
-        "format-wifi": "NET {signalStrength}% ",
-        "format-ethernet": "NET {ipaddr}/{cidr} 󰈀",
+        "format-wifi": "{signalStrength}% ",
+        "format-ethernet": "{ipaddr}/{cidr} 󰈀",
         "tooltip-format": "{ifname} via {gwaddr} 󰈀",
         "format-linked": "{ifname} (No IP) 󰈀",
         "format-disconnected": "Disconnected ⚠",
@@ -82,12 +75,12 @@
     },
     "pulseaudio": {
         // "scroll-step": 1, // %, can be a float
-        "format": "VOL {volume}% {icon}  {format_source}",
-        "format-bluetooth": "VOL {volume}% {icon}  {format_source}",
-        "format-bluetooth-muted": "VOL muted {icon}  {format_source}",
-        "format-muted": "VOL muted  {format_source}",
-        "format-source": "MIC {volume}% ",
-        "format-source-muted": "MIC muted ",
+        "format": "{icon}  {volume}% {format_source}",
+        "format-bluetooth": "{icon}  {volume}% {format_source}",
+        "format-bluetooth-muted": "{icon}  muted  {format_source}",
+        "format-muted": "muted {format_source}",
+        "format-source": "  {volume}%",
+        "format-source-muted": "   muted",
         "format-icons": {
             "headphone": "",
             "hands-free": "",
@@ -104,10 +97,10 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "BAT {capacity}% {icon}",
-        "format-charging": "BAT {capacity}% ",
-        "format-plugged": "BAT {capacity}% ",
-        "format-alt": "BAT {time} {icon}",
+        "format": "{capacity}% {icon}",
+        "format-charging": "{capacity}% ",
+        "format-plugged": "{capacity}% ",
+        "format-alt": "{time} {icon}",
         "tooltip-format": "Battery: {capacity}% — {timeTo}",
         "format-icons": ["", "", "", "", ""]
     }
