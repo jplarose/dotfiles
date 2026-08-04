@@ -102,34 +102,36 @@ yta() {
   fi
 
   # Manually embed metadata/art into split-chapter files, since yt-dlp's
-  # built-in --embed-metadata/--embed-thumbnail unreliably rename or corrupt
-  # files when combined with --split-chapters.
+  # built-in --embed-metadata/--embed-thumbnail unreliably rename files
+  # when combined with --split-chapters. Audio is re-encoded through the
+  # reference `flac` tool (not ffmpeg's own FLAC muxer) because ffmpeg
+  # writes an incorrect STREAMINFO total-samples value on these files even
+  # on a full decode/re-encode, causing players like Plex to report the
+  # original video's full length instead of the trimmed clip's actual length.
   if [ "$split_chapters" = true ]; then
-    local album_dir artist album cover track title flac tmp
+    local album_dir artist album cover track title flac_file tmp
     while IFS= read -r -d '' cover; do
       album_dir="$(dirname "$cover")"
       artist="$(basename "$(dirname "$album_dir")")"
       album="$(basename "$album_dir")"
-      while IFS= read -r -d '' flac; do
-        track="$(basename "$flac" .flac | cut -d' ' -f1)"
-        title="$(basename "$flac" .flac | cut -d' ' -f3-)"
-        tmp="${flac}.tagging.flac"
-        ffmpeg -y -loglevel error \
-          -i "$flac" -i "$cover" \
-          -map 0:a -map 1:v \
-          -map_chapters -1 \
-          -c:a flac -c:v copy \
-          -metadata artist="$artist" \
-          -metadata album_artist="$artist" \
-          -metadata album="$album" \
-          -metadata track="$track" \
-          -metadata title="$title" \
-          -disposition:v attached_pic \
-          "$tmp" && mv "$tmp" "$flac"
+      while IFS= read -r -d '' flac_file; do
+        track="$(basename "$flac_file" .flac | cut -d' ' -f1)"
+        title="$(basename "$flac_file" .flac | cut -d' ' -f3-)"
+        tmp="${flac_file}.tmp"
+        ffmpeg -loglevel error -i "$flac_file" -map 0:a -map_chapters -1 -f wav - \
+          | flac --best --silent -f -o "$tmp" -
+        metaflac \
+          --set-tag="ARTIST=$artist" \
+          --set-tag="ALBUMARTIST=$artist" \
+          --set-tag="ALBUM=$album" \
+          --set-tag="TRACKNUMBER=$track" \
+          --set-tag="TITLE=$title" \
+          "$tmp"
+        metaflac --import-picture-from="3||||$cover" "$tmp"
+        mv "$tmp" "$flac_file"
       done < <(find "$album_dir" -maxdepth 1 -name '*.flac' -print0)
     done < <(find "$run_dir" -name 'cover.jpg' -print0)
   fi
-
 
   command beet --directory "$BEETS_DIR" import "$run_dir"
   beet_status=$?
