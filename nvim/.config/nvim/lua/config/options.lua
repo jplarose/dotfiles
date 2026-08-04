@@ -11,6 +11,9 @@ o.mouse = 'a'
 -- Don't show mode since statusline shows it
 o.showmode = false
 
+-- Show the tab/buffer line
+o.showtabline = 2
+
 -- System clipboard
 o.clipboard = 'unnamedplus'
 

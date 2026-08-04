@@ -184,6 +184,8 @@ PACMAN_PACKAGES=(
     tree-sitter-cli
     tea
     nvm
+    superfile
+    lazygit
 )
 
 info "Installing ${#PACMAN_PACKAGES[@]} official packages..."

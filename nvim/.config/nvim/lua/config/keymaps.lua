@@ -25,6 +25,26 @@ local global_mappings = {
   { '<leader>q', '<cmd>q<CR>', desc = 'Go back to file tree' },
   { 'j', 'jzz', desc = 'Jump down to line and center' },
   { 'k', 'kzz', desc = 'Jump up to line and center' },
+  { '<S-h>', '<cmd>bprevious<CR>', desc = 'Previous Tab' },
+  { '<S-l>', '<cmd>bnext<CR>', desc = 'Next Tab' },
+  {
+    '<leader>bd',
+    function()
+      local current = vim.api.nvim_get_current_buf()
+      local others = vim.tbl_filter(function(buf)
+        return buf ~= current and vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted
+      end, vim.api.nvim_list_bufs())
+
+      if #others > 0 then
+        vim.api.nvim_set_current_buf(others[1])
+      else
+        vim.cmd 'enew'
+      end
+
+      vim.cmd.bdelete(current)
+    end,
+    desc = 'Close Tab',
+  },
 }
 
 wk.add(global_mappings)
