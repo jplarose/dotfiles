@@ -11,12 +11,15 @@ alias yt='yt-dlp -f "bv*+ba/b" --merge-output-format mp4 --embed-metadata --embe
 # Custom Aliases
 alias dev='cd "$DEV_DIRECTORY"'
 alias ss='cbonsai -l -t 0.75 -i -w 10 -L 75 -M 12'
-alias glog='git log --oneline -n 20 --graph'
 alias gnew='git fetch && git pull'
+alias glog='git log --graph -n 20 --date=short --pretty=format:"%C(auto)%h%C(reset) %C(green)%ad%C(reset) %C(blue)%an%C(reset)%C(auto)%d%C(reset) %s %C(yellow)"'
 
 alias vpnup='sudo wg-quick up Framework'
 alias vpndown='sudo wg-quick down Framework'
 alias vpnstatus='sudo wg show'
+
+# Reset the waybar styling to pick up changes
+alias waybset='killall -SIGUSR2 waybar'
 
 #######################################################
 # Custom Functions
