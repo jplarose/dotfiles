@@ -42,11 +42,15 @@ yta() {
   fi
 
   local split_chapters=false
+  local skip_beets=false
   local args=()
   for arg in "$@"; do
     case "$arg" in
       -c|--chapters)
         split_chapters=true
+        ;;
+      -n|--no-import)
+        skip_beets=true
         ;;
       *)
         args+=("$arg")
@@ -75,6 +79,7 @@ yta() {
     ytdlp_opts+=(
       --split-chapters
       --write-thumbnail --convert-thumbnails jpg
+      -o "$run_dir/_source/%(title)s [%(id)s].%(ext)s"
       -o "chapter:$run_dir/%(uploader|Unknown Artist)s/%(title)s/%(section_number)02d - %(section_title)s.%(ext)s"
       -o "thumbnail:$run_dir/%(uploader|Unknown Artist)s/%(title)s/cover.%(ext)s"
     )
@@ -104,6 +109,10 @@ yta() {
     echo "yt-dlp reported some errors, but downloaded files were kept; continuing to beets" >&2
   fi
 
+  if [ "$split_chapters" = true ]; then
+    rm -rf "$run_dir/_source"
+  fi
+
   # Manually embed metadata/art into split-chapter files, since yt-dlp's
   # built-in --embed-metadata/--embed-thumbnail unreliably rename files
   # when combined with --split-chapters. Audio is re-encoded through the
@@ -121,7 +130,7 @@ yta() {
         track="$(basename "$flac_file" .flac | cut -d' ' -f1)"
         title="$(basename "$flac_file" .flac | cut -d' ' -f3-)"
         tmp="${flac_file}.tmp"
-        ffmpeg -loglevel error -i "$flac_file" -map 0:a -map_chapters -1 -f wav - \
+        ffmpeg -nostdin -loglevel error -i "$flac_file" -map 0:a -map_chapters -1 -f wav - < /dev/null \
           | flac --best --silent -f -o "$tmp" -
         metaflac \
           --set-tag="ARTIST=$artist" \
@@ -134,6 +143,23 @@ yta() {
         mv "$tmp" "$flac_file"
       done < <(find "$album_dir" -maxdepth 1 -name '*.flac' -print0)
     done < <(find "$run_dir" -name 'cover.jpg' -print0)
+  fi
+
+  if [ "$skip_beets" = true ]; then
+    mkdir -p "$BEETS_DIR" || return 1
+    if command -v rsync >/dev/null 2>&1; then
+      rsync -a "$run_dir"/ "$BEETS_DIR"/
+    else
+      cp -a "$run_dir"/. "$BEETS_DIR"/
+    fi
+    local move_status=$?
+    if [ "$move_status" -eq 0 ]; then
+      rm -rf "$run_dir"
+      echo "Files moved to: $BEETS_DIR" >&2
+    else
+      echo "failed to move files into $BEETS_DIR; keeping staging directory: $run_dir" >&2
+    fi
+    return "$move_status"
   fi
 
   command beet --directory "$BEETS_DIR" import "$run_dir"
