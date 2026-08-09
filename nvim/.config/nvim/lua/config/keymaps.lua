@@ -70,7 +70,6 @@ wk.add(livePreview_mappings)
 
 local splitMappings = {
   { '<leader>v', '<cmd>vsplit<CR>', desc = 'Vertical Split' },
-  { '<leader>s', '<cmd>split<CR>', desc = 'Horizontal Split' },
 }
 
 wk.add(splitMappings)

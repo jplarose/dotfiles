@@ -59,3 +59,6 @@ o.confirm = true
 -- Folding Options
 o.foldmethod = 'expr'
 o.foldexpr = 'nvim_treesitter#foldexpr()'
+
+-- Terminal Colors
+o.termguicolors = true
