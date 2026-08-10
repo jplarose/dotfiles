@@ -33,4 +33,7 @@ hl.on("hyprland.start", function()
 
 	-- Load cliphist history
 	hl.exec_cmd("wl-paste --watch cliphist store")
+
+	-- Run udiskie for easy disk mounting
+	hl.exec_cmd("udiskie --tray")
 end)
