@@ -216,7 +216,7 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-        { 'gr', group = 'LSP Actions', mode = { 'n' } },
+        { 'gz', group = 'LSP Actions', mode = { 'n' } },
       },
     },
   },
@@ -442,6 +442,24 @@ require('lazy').setup({
             mode = mode or 'n'
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
+
+          -- Neovim's built-in LSP mappings are global defaults using the `gr`
+          -- prefix. Remove them globally (and defensively from this buffer) so
+          -- `gr` always resolves to the custom references picker. Keep the
+          -- displaced LSP actions under the otherwise unused `gz` prefix.
+          for _, keys in ipairs { 'gra', 'gri', 'grn', 'grr', 'grt', 'grx' } do
+            pcall(vim.keymap.del, 'n', keys)
+            pcall(vim.keymap.del, 'n', keys, { buffer = event.buf })
+          end
+          map('gr', function()
+            require('telescope.builtin').lsp_references()
+          end, 'Find references')
+          map('gza', vim.lsp.buf.code_action, '[G]oto Code [A]ction')
+          map('gzi', vim.lsp.buf.implementation, '[G]oto [I]mplementation')
+          map('gzn', vim.lsp.buf.rename, '[R]e[n]ame')
+          map('gzr', vim.lsp.buf.references, '[G]oto [R]eferences')
+          map('gzt', vim.lsp.buf.type_definition, '[G]oto [T]ype Definition')
+          map('gzx', vim.lsp.codelens.run, 'Run CodeLens')
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
@@ -915,7 +933,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommended keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
