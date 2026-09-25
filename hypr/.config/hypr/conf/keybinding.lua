@@ -22,7 +22,7 @@ hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("obsidian"), { description = "Open Ob
 -- Display management
 hl.bind(
 	mainMod .. " + SHIFT + P",
-	hl.dsp.exec_cmd("hypr-lid-management reconcile"),
+	function() require("conf.monitor").reconcile() end,
 	{ description = "Review current monitor states and configure workspaces accordingly." }
 )
 hl.bind(

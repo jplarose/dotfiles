@@ -3,9 +3,8 @@
 -- name: "Default"
 -------------------------------------------------------
 
--- Keep the laptop panel at the origin.  Dock connector names are local to a
--- machine, so the external layout is selected from a hostname-specific
--- profile below rather than being shared globally.
+-- Keep the laptop panel at the origin. Profiles resolve physical dock routes
+-- to whatever connector names the kernel assigned this time.
 hl.monitor({ output = "eDP-1", mode = "preferred", position = "0x0", scale = 1 })
 
 local hostname_file = io.open("/etc/hostname", "r")
@@ -17,7 +16,7 @@ local profiles = {
 	specterops = "specterops",
 }
 local profile = profiles[hostname]
-if profile then require("conf.monitors." .. profile) end
+local dock_command = profile and require("conf.monitors." .. profile) or nil
 
 -- Fallback for an unfamiliar output or host without a profile.
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
@@ -34,10 +33,25 @@ hl.bind(
 	{ locked = true, description = "Handle laptop lid opening" }
 )
 
-hl.on("monitor.layout_changed", function()
-	-- Reconcile workspace slots independently of lid handling.  A desktop
-	-- machine has no eDP-1, so hypr-lid-manager correctly exits early there;
-	-- workspace ownership still needs to follow the monitors' x positions.
-	hl.exec_cmd("hypr-workspace-manager reconcile")
-	hl.exec_cmd("hypr-lid-manager reconcile")
-end)
+local pending = false
+local function reconcile()
+	if pending then return end
+	pending = true
+	hl.timer(function()
+		pending = false
+		-- Resolve the dock first, then park/unpark the panel, then reconcile
+		-- workspaces inside the lid manager. A failed dock query must still
+		-- allow the lid policy to restore a usable laptop display.
+		local command = "hypr-lid-manager start"
+		if dock_command then command = dock_command .. "; " .. command end
+		hl.exec_cmd(command)
+	end, { timeout = 500, type = "oneshot" })
+end
+
+hl.on("monitor.added", reconcile)
+hl.on("monitor.removed", reconcile)
+hl.on("monitor.layout_changed", reconcile)
+hl.on("hyprland.start", reconcile)
+reconcile() -- Restart missing helpers and reconcile on config reload too.
+
+return { reconcile = reconcile }

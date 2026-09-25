@@ -40,9 +40,14 @@ monitors_json() { hyprctl monitors -j; }
 panel_parked() { [[ -r "$parked_panel_file" ]] && [[ "$(<"$parked_panel_file")" == "$laptop_monitor" ]]; }
 
 visible_monitors_json() {
+    if [[ -n "${monitor_snapshot:-}" ]]; then printf '%s\n' "$monitor_snapshot"; return; fi
     local excluded=""
     panel_parked && excluded="$laptop_monitor"
-    monitors_json | jq --arg excluded "$excluded" 'map(select(.disabled != true and ($excluded == "" or .name != $excluded)))'
+    monitors_json | jq --arg excluded "$excluded" '
+      map(select(.disabled != true and .name != "FALLBACK")) as $active
+      | ($active | map(select($excluded == "" or .name != $excluded))) as $visible
+      | if ($visible | length) > 0 then $visible else $active end
+    '
 }
 
 enabled_monitors() {
@@ -115,11 +120,15 @@ main() {
     [[ $# -ge 1 ]] || usage
     local action="$1" argument="${2:-}"
     exec 9>"$lock_file"
-    flock -n 9 || exit 0
+    flock 9
 
     if [[ "$action" == "toggle-mode" ]]; then toggle_mode; return; fi
     [[ "$action" == "focus" || "$action" == "move" || "$action" == "cycle" || "$action" == "move-cycle" || "$action" == "reconcile" ]] || usage
 
+    # Use one topology snapshot throughout the action. Repeated live reads can
+    # otherwise mix the two-display and one-display states during undocking.
+    local monitor_snapshot
+    monitor_snapshot="$(visible_monitors_json)"
     mapfile -t monitors < <(enabled_monitors)
     ((${#monitors[@]})) || { notify "No enabled monitors"; exit 1; }
     local count="${#monitors[@]}" focused selected_mode target group slot destination
@@ -127,13 +136,9 @@ main() {
     [[ -n "$focused" ]] || { notify "No focused monitor"; exit 1; }
     selected_mode="$(mode)"
 
-    # Focused mode intentionally keeps native per-workspace ownership.  In
-    # grouped mode, ownership is topology-relative and must be corrected for
-    # every existing workspace, not only the currently visible group.
+    # Determine the requested group before moving workspace ownership. Moving
+    # the focused workspace can change activeWorkspace and select another group.
     [[ "$action" != "reconcile" || "$selected_mode" == "grouped" ]] || return 0
-    if [[ "$selected_mode" == "grouped" ]]; then
-        reconcile_workspace_ownership "$count" "${monitors[@]}"
-    fi
     if [[ "$action" == "reconcile" ]]; then
         if [[ -n "$argument" ]]; then
             [[ "$argument" =~ ^[1-9][0-9]*$ ]] || usage
@@ -162,6 +167,10 @@ main() {
         fi
     fi
 
+    if [[ "$selected_mode" == "grouped" ]]; then
+        reconcile_workspace_ownership "$count" "${monitors[@]}"
+    fi
+
     for slot in "${!monitors[@]}"; do
         if [[ "${monitors[$slot]}" == "$focused" ]]; then
             destination=$(( (group - 1) * count + slot + 1 ))
@@ -180,4 +189,4 @@ main() {
     focus_monitor "$focused"
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi
