@@ -61,5 +61,7 @@ if [ -f ~/.bash_aliases ]; then
   . ~/.bash_aliases
 fi
 
+export LIBVIRT_DEFAULT_URI="qemu:///system"
+
 source ~/.nvm/nvm.sh
 source ~/.nvm/bash_completion
