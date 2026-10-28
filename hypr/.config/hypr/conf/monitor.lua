@@ -3,8 +3,8 @@
 -- name: "Default"
 -------------------------------------------------------
 
--- Keep the laptop panel at the origin. Profiles resolve physical dock routes
--- to whatever connector names the kernel assigned this time.
+-- Start the panel at the origin; the lid manager reapplies its saved left/right
+-- position after profiles resolve dock routes to current connector names.
 hl.monitor({ output = "eDP-1", mode = "preferred", position = "0x0", scale = 1 })
 
 local hostname_file = io.open("/etc/hostname", "r")

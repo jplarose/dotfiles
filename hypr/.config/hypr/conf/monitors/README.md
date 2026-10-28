@@ -1,5 +1,45 @@
 # Dock monitor ordering
 
+## Laptop on the left or right
+
+Press `SUPER+ALT+P` to swap the laptop panel between the far left and far right.
+You can also choose a side explicitly:
+
+```sh
+hypr-monitor-layout left
+hypr-monitor-layout right
+hypr-monitor-layout toggle
+hypr-monitor-layout status
+hypr-monitor-layout right --dry-run
+```
+
+The default is `left`. The choice is saved in
+`${XDG_STATE_HOME:-~/.local/state}/hypr/monitor-side` and reapplied on reconnect,
+lid transitions, resume and config reload. With no external display the laptop
+returns to `0x0`, retaining the saved choice for the next connection.
+Restow the `hypr` package to install the new command, then reload Hyprland to
+activate the shortcut.
+
+With one external display, the helper explicitly positions both screens as a
+pair starting at `0x0`. With multiple external displays it preserves their order
+and positions and places the laptop flush with the outermost external edge.
+All participating outputs receive explicit positions so Hyprland's `auto` rule
+cannot move external displays in response to the laptop moving. Placement
+uses the current resolution, scale and rotation as
+described in Hyprland's [positioning documentation](https://wiki.hypr.land/configuring/core/monitors/positioning/).
+It works with a single external monitor or several; no connector names or
+external resolutions need configuring. For example, with a 2256-wide laptop and
+a 1920-wide external, the laptop is at `0x0` and external at `2256x0` on the left;
+on the right, the external is at `0x0` and laptop at `1920x0`.
+Negative coordinates are supported with multiple external screens. Set `HYPR_LAPTOP_MONITOR` if
+the internal panel is named something other than `eDP-1`.
+
+Layout is applied before workspace ownership is reconciled so workspace numbers
+continue to follow the monitors from left to right. The existing lid policy
+still controls whether the panel participates when closed.
+
+## Dock routes
+
 SpecterOps and Framework 13 share the same dock and cabling. Both profiles use
 `dock.lua`, which identifies its left and right sockets by DisplayPort MST routes.
 The GS27QA monitors both report serial `0x01010101`, and their kernel
@@ -26,8 +66,8 @@ For example, `mst:3-2-2` means upstream connector `3`, then dock ports `2-2`.
 Only the dock portion is configured, so the upstream connector may change.
 The helper requires the expected monitor model, rejects duplicate route matches
 and matches spanning different upstream connectors, and leaves unknown outputs
-to the default Hyprland rule. It can position either dock display independently
-when only one is connected.
+to the default Hyprland rule. With only one external display connected, the
+laptop layout helper owns both positions instead of applying fixed dock offsets.
 
 This identifies sockets, not individual monitors. Keep each monitor cable in its
 assigned dock socket. Changing the dock, its internal topology, or those cable

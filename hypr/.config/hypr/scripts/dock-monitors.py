@@ -102,6 +102,14 @@ def reconcile(args):
                 raise
         # A dock can announce its displays before their PATH/modes are ready.
         time.sleep(0.2)
+    active = [m for m in monitors if not m.get("disabled") and m["name"] != "FALLBACK"]
+    laptop = os.environ.get("HYPR_LAPTOP_MONITOR", "eDP-1")
+    if any(m["name"] == laptop for m in active) and len([m for m in active if m["name"] != laptop]) == 1:
+        # No external ordering to resolve. The laptop layout helper anchors
+        # this pair at zero; fixed dock offsets would fight that rule.
+        if args.dry_run:
+            print("Single external display: position managed by hypr-monitor-layout")
+        return
     changes = []
     for route, position, monitor in resolved:
         x, y = map(int, position.split("x"))

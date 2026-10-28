@@ -181,12 +181,24 @@ main() {
         fi
     done
 
+    local changed=no active_snapshot="" active_workspace
+    # Ownership moves can change the displayed workspace. Keep the original
+    # snapshot for the group/monitor order, but read live activation state when
+    # deciding whether another focus dispatch is necessary.
+    if [[ "$action" == reconcile ]]; then active_snapshot="$(monitors_json)"; fi
     for slot in "${!monitors[@]}"; do
         destination=$(( (group - 1) * count + slot + 1 ))
+        # A layout event can echo our own successful reconciliation. Do not
+        # replay workspace animations when this output already shows its slot.
+        if [[ "$action" == reconcile ]]; then
+            active_workspace="$(jq -r --arg name "${monitors[$slot]}" '.[] | select(.name == $name) | .activeWorkspace.id' <<< "$active_snapshot")"
+            [[ "$active_workspace" == "$destination" ]] && continue
+        fi
         focus_monitor "${monitors[$slot]}"
         focus_workspace "$destination"
+        changed=yes
     done
-    focus_monitor "$focused"
+    if [[ "$changed" == yes ]]; then focus_monitor "$focused"; fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi

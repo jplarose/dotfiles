@@ -106,6 +106,13 @@ class DockMonitorTests(unittest.TestCase):
             dock.reconcile(args)
             self.assertEqual(run.call_count, 1)
 
+    def test_single_dock_display_defers_position_to_laptop_layout(self):
+        args = argparse.Namespace(driver="amdgpu", model="GS27QA", port=PORTS, dry_run=False)
+        single = json.dumps([monitor("eDP-1", 1920, model="BOE"), monitor("DP-12", 0)])
+        with patch.object(dock, "run", side_effect=[single, DRM_OUTPUT, single]) as run:
+            dock.reconcile(args)
+        self.assertEqual(run.call_count, 3)
+
     def test_settle_retries_incomplete_dock_enumeration(self):
         args = argparse.Namespace(driver="amdgpu", model="GS27QA", port=PORTS, dry_run=False, settle=True)
         left = json.dumps([monitor("DP-12", 2256)])
