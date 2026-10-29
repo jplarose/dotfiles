@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Resolve the stowed executable so theme choices are saved in the source repo.
+script_path="$(readlink -f -- "${BASH_SOURCE[0]}")"
+package_dir="$(dirname "$(dirname "$(dirname "$script_path")")")"
+dotfiles_dir="$(dirname "$package_dir")"
+config_dir="$package_dir/.config/waybar"
+
+case "${1:-}" in
+    start)
+        theme="$(cat "$config_dir/theme")"
+        ;;
+    default|v2.3)
+        theme="$1"
+        # Check for conflicts before saving the choice or touching live links.
+        stow --simulate --restow --no-folding -d "$dotfiles_dir" -t "$HOME" waybar
+        printf '%s\n' "$theme" > "$config_dir/theme"
+        stow --restow --no-folding -d "$dotfiles_dir" -t "$HOME" waybar
+        printf 'Waybar theme: %s (saved in %s/theme)\n' "$theme" "$config_dir"
+        # An existing Waybar needs restarting because its config path changes.
+        if pgrep -u "$(id -u)" -x waybar >/dev/null; then
+            pkill -u "$(id -u)" -x waybar
+            for ((attempt = 0; attempt < 50; attempt++)); do
+                if ! pgrep -u "$(id -u)" -x waybar >/dev/null; then
+                    break
+                fi
+                sleep 0.1
+            done
+            if pgrep -u "$(id -u)" -x waybar >/dev/null; then
+                echo 'Waybar did not stop; restart it to apply the saved theme.' >&2
+                exit 1
+            fi
+            log_file="$(mktemp "${TMPDIR:-/tmp}/waybar-theme.XXXXXX.log")"
+            nohup "$script_path" start >"$log_file" 2>&1 </dev/null &
+            printf 'Waybar restarting; log: %s\n' "$log_file"
+        else
+            echo 'Waybar is stopped. Start it with: waybar-theme start'
+        fi
+        exit 0
+        ;;
+    *)
+        echo 'Usage: waybar-theme {default|v2.3|start}' >&2
+        exit 2
+        ;;
+esac
+
+case "$theme" in
+    default|v2.3) ;;
+    *) echo "Unknown Waybar theme: $theme" >&2; exit 1 ;;
+esac
+
+exec waybar -c "$config_dir/themes/$theme/config" -s "$config_dir/themes/$theme/style.css"

@@ -9,7 +9,7 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("hyprpaper")
 
 	-- Start waybar
-	hl.exec_cmd("waybar -c ~/.config/waybar/themes/default/config -s ~/.config/waybar/themes/default/style.css")
+	hl.exec_cmd("~/.local/bin/waybar-theme start")
 
 	-- Start polkit daemon
 	hl.exec_cmd("systemctl --user start hyprpolkitagent")
