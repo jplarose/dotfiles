@@ -21,6 +21,11 @@ hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("obsidian"), { description = "Open Ob
 
 -- Display management
 hl.bind(
+	mainMod .. " + ALT + P",
+	hl.dsp.exec_cmd("hypr-monitor-layout toggle"),
+	{ description = "Move laptop screen to the left/right end of the monitor layout" }
+)
+hl.bind(
 	mainMod .. " + SHIFT + P",
 	function() require("conf.monitor").reconcile() end,
 	{ description = "Review current monitor states and configure workspaces accordingly." }

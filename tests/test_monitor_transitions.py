@@ -190,11 +190,33 @@ watch_hotplug
         self.lid.write_text("open\n")
         self.assertNotEqual(self.shell("topology_signature").stdout, closed)
 
+    def test_watcher_detects_resolution_changes(self):
+        before = self.shell("topology_signature").stdout
+        monitors = json.loads(self.monitors.read_text())
+        monitors[1].update(width=3840, height=2160)
+        self.set_monitors(monitors)
+        self.assertNotEqual(self.shell("topology_signature").stdout, before)
+
+    def test_laptop_layout_settles_before_workspace_ownership_changes(self):
+        # Exercise the real orchestration function with only the commands mocked.
+        mocks = r'''
+hypr-monitor-layout() { printf 'layout %s\n' "$*" >> "$TEST_CALLS"; }
+hypr-workspace-manager() { printf 'workspaces %s\n' "$*" >> "$TEST_CALLS"; }
+'''
+        self.shell("reconcile_workspaces 2", mocks=mocks)
+        self.assertEqual(self.log(), "layout apply\nworkspaces reconcile 2\n")
+
     def test_workspace_fallback_includes_last_panel_despite_stale_marker(self):
         self.parked.write_text("eDP-1\n")
         self.set_monitors([monitor("eDP-1", focused=True), monitor("FALLBACK")])
         result = self.shell("visible_monitors_json", script=WORKSPACES)
         self.assertEqual([m["name"] for m in json.loads(result.stdout)], ["eDP-1"])
+
+    def test_settled_workspace_reconciliation_does_not_replay_focus_animation(self):
+        self.set_monitors([monitor("DP-3", 1, 0, True), monitor("eDP-1", 2, 1920)])
+        mocks = LID_MOCKS + '\nreconcile_workspace_ownership() { :; }\n'
+        self.shell("main reconcile", script=WORKSPACES, mocks=mocks)
+        self.assertNotIn("dispatch", self.log())
 
     def test_workspace_group_uses_snapshot_from_before_ownership_changes(self):
         self.parked.write_text("eDP-1\n")
@@ -206,7 +228,7 @@ reconcile_workspace_ownership() {
         self.shell("main reconcile", script=WORKSPACES, mocks=mocks)
         self.assertIn('workspace = "3", on_current_monitor = true', self.log())
         self.assertIn('workspace = "4", on_current_monitor = true', self.log())
-        self.assertEqual(self.log().count("monitors -j"), 1)
+        self.assertEqual(self.log().count("monitors -j"), 2)
 
 
 if __name__ == "__main__":

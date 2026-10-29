@@ -92,7 +92,7 @@ topology_signature() {
     # Include geometry and the hardware lid state, but not DPMS: idle blanking
     # must not trigger a reconciliation that wakes the screen immediately.
     monitors | jq -c --arg lid "$(physical_lid_state)" \
-        '{lid: $lid, monitors: (map({name, disabled, x, y, scale}) | sort_by(.name))}'
+        '{lid: $lid, monitors: (map({name, disabled, x, y, width, height, scale, transform}) | sort_by(.name))}'
 }
 watch_hotplug() {
     local previous="" current
@@ -167,6 +167,7 @@ current_workspace_group() {
 }
 reconcile_workspaces() {
     local group="${1:-}"
+    if command -v hypr-monitor-layout >/dev/null; then hypr-monitor-layout apply; fi
     command -v hypr-workspace-manager >/dev/null || return 0
     if [[ -n "$group" ]]; then hypr-workspace-manager reconcile "$group"; else hypr-workspace-manager reconcile; fi
 }
