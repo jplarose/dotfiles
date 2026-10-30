@@ -2,7 +2,7 @@
   "reload_style_on_change": true,
   "position": "top",
   "margin-top": 2,
-  "height": 27,
+  "height": 40,
   "margin-left": 5,
   "margin-right": 5,
   "margin-bottom": 2,
@@ -241,7 +241,7 @@
     "tooltip": false
   },
   "tray": {
-    "icon-size": 12,
+    "icon-size": 20,
     "spacing": 12
   },
   "mpris": {
