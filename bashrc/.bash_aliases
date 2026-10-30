@@ -19,6 +19,7 @@ alias vpndown='sudo wg-quick down Framework'
 alias vpnstatus='sudo wg show'
 
 alias media='spf "$MEDIA_DIRECTORY" --config-file ~/.config/superfile/config-media.toml'
+alias ymedia='yazi /mnt/nfs/media'
 
 # Reset the waybar styling to pick up changes
 alias waybset='killall -SIGUSR2 waybar'
