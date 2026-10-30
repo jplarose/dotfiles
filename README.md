@@ -2,6 +2,10 @@
 
 Personal dotfiles managed with GNU Stow.
 
+Run `./install.sh` to install packages, then `./stow-dotfiles.sh` to select
+configs and enable automatic restowing after merge pulls. Yazi is included;
+see [its configuration notes](yazi/README.md) for shortcuts and setup.
+
 ## Local Secrets
 
 Machine-specific paths and secrets should live in `~/.bash_secrets`, which is sourced by `.bashrc` before aliases and functions are defined.

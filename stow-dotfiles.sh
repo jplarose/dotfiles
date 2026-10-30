@@ -150,6 +150,7 @@ STOW_PACKAGES=(
     nvim
     oh-my-posh
     waybar
+    yazi
     zellij
 )
 

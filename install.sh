@@ -185,6 +185,7 @@ PACMAN_PACKAGES=(
     tea
     nvm
     superfile
+    yazi
     lazygit
 )
 

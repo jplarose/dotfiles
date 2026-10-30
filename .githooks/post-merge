@@ -31,6 +31,8 @@ if ! git -C "$DOTFILES_DIR" rev-parse --verify ORIG_HEAD >/dev/null 2>&1; then
     exit 0
 fi
 
+# Discover packages from changed paths, including yazi/.config/yazi.
+# New packages only restow after the installer records an opt-in decision.
 changed_packages="$(
     git -C "$DOTFILES_DIR" diff --name-only ORIG_HEAD HEAD |
         awk -F/ 'NF > 1 { print $1 }' |
