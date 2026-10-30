@@ -1,0 +1,39 @@
+layout {
+
+    // Global initial directory for all of the tabs here
+    cwd "$DEV_DIRECTORY"
+
+    // Use the compact status bar
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="compact-bar"
+        }
+        children
+    }
+
+    // OpenHound shell and editor in a stack
+    tab name="OpenHound" focus=true cwd="./OpenHound" {
+        pane stacked=true {
+            pane name="OpenHound" focus=true expanded=true
+            pane name="OpenHound NVIM" command="nvim" {
+                args "."
+            }
+        }
+    }
+
+    tab name="OpenHound Collectors" cwd="./Collectors" {
+        pane name="Collectors" command="bash" {
+            args "-c" "ls; exec bash"
+        }
+    }
+
+    tab name="BloodHound" cwd="./bloodhound-enterprise" {
+        pane stacked=true {
+            pane name="BloodHound NVIM" command="nvim" {
+                args "."
+            }
+            // Work around MoveFocusOrTab selecting the most recently created pane on first entry.
+            pane name="Bloodhound" focus=true expanded=true
+        }
+    }
+}

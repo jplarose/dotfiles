@@ -23,6 +23,9 @@ alias media='spf "$MEDIA_DIRECTORY" --config-file ~/.config/superfile/config-med
 # Reset the waybar styling to pick up changes
 alias waybset='killall -SIGUSR2 waybar'
 
+# Zellij template chooser
+alias zellij='zellij --layout "$ZELLIJ_LAYOUT_NAME"'
+
 #######################################################
 # Custom Functions
 #######################################################

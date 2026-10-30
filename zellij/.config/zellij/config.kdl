@@ -141,10 +141,10 @@ keybinds clear-defaults=true {
         }
     }
     shared_except "locked" {
-        bind "Alt left" { MoveFocusOrTab "left"; }
+        bind "Alt left" { GoToPreviousTab; }
         bind "Alt down" { MoveFocus "down"; }
         bind "Alt up" { MoveFocus "up"; }
-        bind "Alt right" { MoveFocusOrTab "right"; }
+        bind "Alt right" { GoToNextTab; }
         bind "Alt +" { Resize "Increase"; }
         bind "Alt -" { Resize "Decrease"; }
         bind "Alt =" { Resize "Increase"; }
@@ -300,7 +300,7 @@ stacked_pane_list false
 // Choose the theme that is specified in the themes section.
 // Default: default
 // 
-// theme "dracula"
+theme "kanagawa"
  
 // Choose the base input mode of zellij.
 // Default: normal
@@ -319,12 +319,12 @@ stacked_pane_list false
 // The name of the default layout to load on startup
 // Default: "default"
 // 
-// default_layout "compact"
+// default_layout "$ZELLIJ_LAYOUT_NAME"
  
 // The folder in which Zellij will look for layouts
 // (Requires restart)
 // 
-// layout_dir "/tmp"
+layout_dir "/home/jlarose/.config/zellij/layouts"
  
 // The folder in which Zellij will look for themes
 // (Requires restart)
