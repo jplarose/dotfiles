@@ -6,6 +6,9 @@ Run `./install.sh` to install packages, then `./stow-dotfiles.sh` to select
 configs and enable automatic restowing after merge pulls. Yazi is included;
 see [its configuration notes](yazi/README.md) for shortcuts and setup.
 
+The `yta` function in `bashrc` uses the `scripts` package for its shell helpers;
+select both packages. See [the helper notes](scripts/README.md) for usage.
+
 ## Codex learning preferences
 
 The `codex` package includes [learn-by-connection](codex/.codex/skills/learn-by-connection/SKILL.md),

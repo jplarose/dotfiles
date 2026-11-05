@@ -149,6 +149,7 @@ STOW_PACKAGES=(
     kitty
     nvim
     oh-my-posh
+    scripts
     waybar
     yazi
     zellij
