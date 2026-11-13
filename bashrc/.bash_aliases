@@ -20,7 +20,7 @@ alias vpndown='sudo wg-quick down Framework'
 alias vpnstatus='sudo wg show'
 
 alias media='spf "$MEDIA_DIRECTORY" --config-file ~/.config/superfile/config-media.toml'
-alias ymedia='yazi /mnt/nfs/media'
+alias ymedia='y /mnt/nfs/media'
 
 # Reset the waybar styling to pick up changes
 alias waybset='killall -SIGUSR2 waybar'
@@ -31,6 +31,15 @@ alias zellij='zellij --layout "$ZELLIJ_LAYOUT_NAME"'
 #######################################################
 # Custom Functions
 #######################################################
+
+# Yazi wrapper to quit to the selected directory
+y() {
+	local tmp cwd; tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+	command yazi "$@" --cwd-file="$tmp"
+	IFS= read -r -d '' cwd < "$tmp"
+	[ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd" || builtin true
+	command rm -f -- "$tmp"
+}
 
 # Pass the machine-local library directory to beets when BEETS_DIR is set.
 beet() {
