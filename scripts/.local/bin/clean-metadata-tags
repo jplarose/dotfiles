@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") -f FILETYPE -d PATH
+
+Remove unwanted metadata tags from audio files using ExifTool.
+
+Options:
+  -h, --help             Show this help message
+  -f, --filetype TYPE    File extension (m4a, mp4, flac, mp3)
+  -d, --directory PATH   Directory or individual file to process
+
+Examples:
+  $(basename "$0") -f m4a -d "/mnt/media/Music/The Beatles"
+  $(basename "$0") -f flac -d "./Music"
+  $(basename "$0") -f mp3 -d "./song.mp3"
+
+Notes:
+  - Directories are processed recursively.
+  - ExifTool creates _original backup files by default.
+  - Original filesystem modification times are preserved.
+EOF
+}
+
+FILETYPE=""
+TARGET=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+	    show_help
+	    exit 0
+	    ;;
+	-f|--filetype)
+	    [[ $# -ge 2 && -n "$2" ]] || {
+	        echo "Error: --filetype requires a value." >&2
+		exit 1
+	    }
+	    FILETYPE="${2#.}"
+	    shift 2
+	    ;;
+	-d|--directory)
+	    [[ $# -ge 2 && -n "$2" ]] || {
+	        echo "Error: --directory requires a path." >&2
+		exit 1
+	    }
+	    TARGET="$2"
+	    shift 2
+	    ;;
+	*)
+	    echo "Unknown option: $1" >&2
+	    show_help >&2
+	    exit 1
+	    ;;
+    esac
+done
+
+if [[ -z "$FILETYPE" || -z "$TARGET" ]]; then
+    echo "Error: Both --filetype and --directory are required." >&2
+    show_help >&2
+    exit 1
+fi
+
+if [[ ! -e "$TARGET" ]]; then
+    echo "Error: Path does not exist: $TARGET" >&2
+    exit 1
+fi
+
+FILETYPE="${FILETYPE,,}"
+
+case "$FILETYPE" in
+    m4a|mp4)
+        TAGS=(
+            -ItemList:Owner=
+            -ItemList:AppleStoreAccount=
+            -ItemList:PurchaseDate=
+            -ItemList:AppleStoreCountry=
+
+
+            -ItemList:AppleStoreCatalogID=
+            -ItemList:ArtistID=
+            -ItemList:ComposerID=
+            -ItemList:AlbumID=
+            -ItemList:GenreID=
+
+            # Sorting metadata
+            -ItemList:SortName=
+            -ItemList:SortAlbum=
+            -ItemList:SortArtist=
+            -ItemList:SortComposer=
+            -ItemList:SortAlbumArtist=
+
+            # Redundant tags
+            -ItemList:Rating=
+            -ItemList:Copyright=
+            -ItemList:Compilation=
+            -ItemList:MediaType=
+        )
+        ;;
+    flac|mp3)
+        # No cleanup policy yet.
+	echo "No cleanup policy defined yet for $FILETYPE"
+	exit 0
+	;;
+    *)
+        echo "Error: Unsupported file type: $FILETYPE" >&2
+	exit 1
+	;;
+esac
+
+echo "File type: $FILETYPE"
+echo "Target:    $TARGET"
+echo "Starting metadata cleanup..."
+
+exiftool -P -r -overwrite_original -ext "$FILETYPE" \
+    "${TAGS[@]}" \
+    "$TARGET"
+
+echo "Metadata cleanup complete."

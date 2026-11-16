@@ -28,9 +28,29 @@ alias waybset='killall -SIGUSR2 waybar'
 # Zellij template chooser
 alias zellij='zellij --layout "$ZELLIJ_LAYOUT_NAME"'
 
+# rsync command for moving music
+alias rmusic='rsync -rthv --remove-source-files --ignore-existing --no-perms --no-owner --no-group'
+
+
+
 #######################################################
 # Custom Functions
 #######################################################
+
+# Cleanup empty folders after using rmusic to move things around
+rmusic-cleanup() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: rmusic-cleanup <directory>" >&2
+        return 1
+    fi
+
+    if [[ ! -d "$1" ]]; then
+        echo "Directory does not exist: $1" >&2
+        return 1
+    fi
+
+    find "$1" -mindepth 1 -depth -type d -empty -delete
+}
 
 # Yazi wrapper to quit to the selected directory
 y() {
@@ -39,6 +59,16 @@ y() {
 	IFS= read -r -d '' cwd < "$tmp"
 	[ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd" || builtin true
 	command rm -f -- "$tmp"
+}
+
+# Wrapper for running toontrack via wine
+toontrack() {
+    WINEPREFIX="$HOME/.wine-toontrack" wine "$@"
+}
+
+# Update call for all my system packages and flatpaks
+sysupdate() {
+    paru -Syu && flatpak update -y
 }
 
 # Pass the machine-local library directory to beets when BEETS_DIR is set.
