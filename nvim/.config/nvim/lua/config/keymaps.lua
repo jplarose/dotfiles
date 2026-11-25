@@ -116,6 +116,15 @@ local global_mappings = {
     end,
     desc = 'Close Tab',
   },
+  {
+    '<leader>cp',
+    function()
+      local path = vim.fn.expand '%:p'
+      vim.fn.setreg('+', path)
+      vim.notify('Copied full path: ' .. path)
+    end,
+    desc = 'Copy full path',
+  },
 }
 
 wk.add(global_mappings)
