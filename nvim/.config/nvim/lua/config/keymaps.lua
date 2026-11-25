@@ -119,6 +119,15 @@ local global_mappings = {
   {
     '<leader>cp',
     function()
+      local path = vim.fn.expand '%'
+      vim.fn.setreg('+', path)
+      vim.notify('Copied relative path: ' .. path)
+    end,
+    desc = 'Copy relative path',
+  },
+  {
+    '<leader>cP',
+    function()
       local path = vim.fn.expand '%:p'
       vim.fn.setreg('+', path)
       vim.notify('Copied full path: ' .. path)
